@@ -1534,27 +1534,34 @@ static ssize_t chip_info_show(struct class *class,
 
 static CLASS_ATTR_RO(chip_info);
 
-static ssize_t status_show(struct class *class,
-		struct class_attribute *attr,
-		char *buf)
-{
-	uint32_t status = 0;
-	uint32_t reg_data = 0;
+/* Started by AICoder, pid:xdb79y59dcn3d91147a90811d06da12d02c6bdb8 */
+static ssize_t status_show(struct class *class, struct class_attribute *attr, char *buf) {
+    uint8_t status = 0;
+    uint32_t state0 = 0;
+    int i = 0;
 
-	if (aw_sar_ptr) {
-		aw9610x_i2c_read(aw_sar_ptr, REG_STAT1, &reg_data);
-		status = (reg_data >> 24) & 0x2;
-		pr_info("aw9610x class %s status value is %d", __func__, status);
-		if ((aw_sar_ptr->status == 0) && (status != 0x02)) {
-			return snprintf(buf, 64, "1\n");
-		} else {
-			return snprintf(buf, 64, "0\n");
-		}
-	}
+    if (aw_sar_ptr) {
+        aw9610x_i2c_read(aw_sar_ptr, REG_HOSTIRQSRC, &aw_sar_ptr->irq_status);
+        aw9610x_i2c_read(aw_sar_ptr, REG_STAT0, &state0);
 
-	pr_err("aw9610x class %s aw_sar_ptr is NULL!!!", __func__);
-	return snprintf(buf, 64, "1\n");
+        for (i = 0; i < 2; i++) {
+            aw_sar_ptr->curr_state[i] = ((uint8_t)(state0 >> (24 + i)) & 0x01) << 0 | /* prox0 */
+                                     ((uint8_t)(state0 >> (16 + i)) & 0x01) << 1 | /* prox1 */
+                                     ((uint8_t)(state0 >> (8 + i)) & 0x01) << 2 | /* prox2 */
+                                     ((uint8_t)(state0 >> (0 + i)) & 0x01) << 3;  /* prox3 */
+            if (aw_sar_ptr->curr_state[i]) {
+                status += (uint8_t)((1 << i) & 0x03);
+            }
+        }
+
+        pr_info("sar status = %d\n", status);
+        return snprintf(buf, 64, "%d\n", status);
+    }
+
+    pr_err("aw9610x class %s aw_sar_ptr is NULL!!!", __func__);
+    return snprintf(buf, 64, "%d\n", -1);
 }
+/* Ended by AICoder, pid:xdb79y59dcn3d91147a90811d06da12d02c6bdb8 */
 
 static CLASS_ATTR_RO(status);
 

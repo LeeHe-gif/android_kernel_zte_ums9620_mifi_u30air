@@ -51,6 +51,10 @@ static const struct cts_flash cts_flashes[] = {
       0x854012, 256, 0x1000, 0x8000, 0x40000},
     { "Puya-Semi,P25T22L",
       0x854412, 256, 0x1000, 0x8000, 0x40000},
+    { "Puya-Semi,P25Q41L",
+      0x854013, 256, 0x1000, 0x8000, 0x80000},
+    { "Puya-Semi,P25T42L",
+      0x854413, 256, 0x1000, 0x8000, 0x80000},
 
 
     /* Boya */

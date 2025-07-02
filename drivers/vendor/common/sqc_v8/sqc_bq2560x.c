@@ -24,6 +24,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/usb/phy.h>
 #include <uapi/linux/usb/charger.h>
+#include <linux/timer.h>
 #include "sqc_bq2560x.h"
 
 #ifdef CONFIG_VENDOR_ZTE_LOG_EXCEPTION
@@ -76,7 +77,7 @@ enum {
 #define BQ2560X_DISABLE_PIN_MASK_2720		BIT(0)
 #define BQ2560X_DISABLE_PIN_MASK		BIT(0)
 
-#define BQ2560X_OTG_VALID_MS			500
+#define BQ2560X_OTG_VALID_MS			200
 #define BQ2560X_FEED_WATCHDOG_VALID_MS		50
 #define BQ2560X_OTG_RETRY_TIMES			10
 #define BQ2560X_LIMIT_CURRENT_MAX		3200000
@@ -117,6 +118,7 @@ struct bq2560x_charger_info {
 	struct delayed_work update_work;
 	struct regmap *pmic;
 	struct alarm otg_timer;
+	struct alarm icl_vote_timer;
 	u32 charger_detect;
 	u32 charger_pd;
 	u32 charger_pd_mask;
@@ -128,13 +130,13 @@ struct bq2560x_charger_info {
 	int boost_limit;
 	int chip_main_id;
 	int chip_sub_id;
-	struct wakeup_source *bq_wake_lock;
 	bool suspended;
 	bool use_typec_extcon;
 	bool host_status_check;
 	bool use_pfm_mode;
 	bool support_single_buck_9V;
 	bool disable_ship_mode;
+	bool enable_driver_icl_vote;
 	int init_finished;
 	int hw_mode;
 	int chg_status;
@@ -1528,15 +1530,37 @@ static int bq2560x_charger_dumper_reg(struct bq2560x_charger_info *info)
 	return 0;
 }
 
+enum alarmtimer_restart icl_vote_timer_func(struct alarm *alarm, ktime_t now)
+{
+	union power_supply_propval icl_val;
+	icl_val.intval = 1800000;
+
+	sqc_set_property(POWER_SUPPLY_PROP_INPUT_POWER_LIMIT, &icl_val);
+
+	return ALARMTIMER_NORESTART;
+}
 
 static int bq2560x_charger_usb_change(struct notifier_block *nb,
 				      unsigned long limit, void *data)
 {
 	struct bq2560x_charger_info *info =
 		container_of(nb, struct bq2560x_charger_info, usb_notify);
+	union power_supply_propval icl_val = {.intval = 0};
 
 	bq_info("bq25601: bq25601_charger_usb_change: %d\n", limit);
 	info->limit = limit;
+
+	if (info->enable_driver_icl_vote) {
+		if (info->hw_mode == BQ25601_MASTER) {
+			if (limit) {
+				alarm_start_relative(&info->icl_vote_timer, ms_to_ktime(15 * 1000));
+			} else {
+				alarm_cancel(&info->icl_vote_timer);
+				icl_val.intval = -1;
+				sqc_set_property(POWER_SUPPLY_PROP_INPUT_POWER_LIMIT, &icl_val);
+			}
+		}
+	}
 
 #ifdef CONFIG_VENDOR_SQC_CHARGER
 	sqc_notify_daemon_changed(SQC_NOTIFY_USB,
@@ -1651,9 +1675,9 @@ static void tuning_vindpm_work(struct work_struct *work)
 	struct bq2560x_charger_info *info = container_of(dwork,
 							  struct bq2560x_charger_info,
 							  vindpm_work);
-	__pm_stay_awake(info->bq_wake_lock);
+	pm_stay_awake(info->dev);
 	bq2560x_charger_tuning_vindpm(info);
-	__pm_relax(info->bq_wake_lock);
+	pm_relax(info->dev);
 }
 
 static void force_recharge_workfunc(struct work_struct *work)
@@ -1662,7 +1686,7 @@ static void force_recharge_workfunc(struct work_struct *work)
 	struct bq2560x_charger_info *info = container_of(dwork,
 							  struct bq2560x_charger_info,
 							  force_recharge_work);
-	__pm_stay_awake(info->bq_wake_lock);
+	pm_stay_awake(info->dev);
 	if (info->is_charging_enabled) {
 		bq_info("restart charger\n");
 		bq2560x_charger_stop_charge(info);
@@ -1675,7 +1699,7 @@ static void force_recharge_workfunc(struct work_struct *work)
 		bq2560x_charger_start_charge(info);
 #endif
 	}
-	__pm_relax(info->bq_wake_lock);
+	pm_relax(info->dev);
 }
 
 static void update_workfunc(struct work_struct *work)
@@ -1684,14 +1708,14 @@ static void update_workfunc(struct work_struct *work)
 	struct bq2560x_charger_info *info = container_of(dwork,
 							  struct bq2560x_charger_info,
 							  update_work);
-	__pm_stay_awake(info->bq_wake_lock);
+	pm_stay_awake(info->dev);
 	bq_info("limit=%d\n", info->limit);
 	if (!info->limit) {
 		bq2560x_charger_set_watchdog_timer(info, 0);
 	} else {
 		bq2560x_charger_set_watchdog_timer(info, 80);
 	}
-	__pm_relax(info->bq_wake_lock);
+	pm_relax(info->dev);
 }
 
 static int bq2560x_charger_config_is_enabled(struct bq2560x_charger_info *info)
@@ -2357,6 +2381,7 @@ static int bq2560x_charger_enable_otg(struct regulator_dev *dev)
 	bq_info("%s into", __func__);
 	info->otg_enable = true;
 
+	pm_wakeup_event(info->dev, MSEC_PER_SEC);
 	/*
 	 * Disable charger detection function in case
 	 * affecting the OTG timing sequence.
@@ -2422,6 +2447,7 @@ static int bq2560x_charger_disable_otg(struct regulator_dev *dev)
 
 	bq_info("%s into", __func__);
 	info->otg_enable = false;
+	pm_wakeup_event(info->dev, MSEC_PER_SEC);
 
 	if (info->suspended) {
 		bq_info("Cannot disable otg because the I2C is in suspend mode.\n");
@@ -3340,7 +3366,7 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	bq2560x_get_chip_vendor_id(info);
 
 	info->use_typec_extcon = device_property_read_bool(dev, "use-typec-extcon");
-
+	info->enable_driver_icl_vote = device_property_read_bool(dev, "driver-icl-vote");
 	info->host_status_check = device_property_read_bool(dev, "host-status-check");
 	info->use_pfm_mode = device_property_read_bool(dev, "use-pfm-mode");
 	info->support_single_buck_9V = device_property_read_bool(dev, "support-single-buck-9V");
@@ -3466,6 +3492,17 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	}
 
 	if (info->hw_mode == BQ25601_SLAVE) {
+		slave_chg_retry_counter ++;
+		pr_err("slave_chg_retry_counter=%d\n", slave_chg_retry_counter);
+	}
+
+	ret = bq2560x_charger_hw_init(info);
+	if (ret) {
+		pr_err("bq2560x_charger_hw_init failed ret=%d\n", ret);
+		goto USB_REGISTER_NOTIFIER_FAILED;
+	}
+
+	if (info->hw_mode == BQ25601_SLAVE) {
 		charger_cfg.drv_data = info;
 		charger_cfg.of_node = dev->of_node;
 
@@ -3475,14 +3512,6 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 		if (IS_ERR(info->zte_psy_usb)) {
 			dev_err(dev, "failed to register zte power supply\n");
 		}
-		slave_chg_retry_counter ++;
-		pr_err("slave_chg_retry_counter=%d\n", slave_chg_retry_counter);
-	}
-
-
-	ret = bq2560x_charger_hw_init(info);
-	if (ret) {
-		goto USB_REGISTER_NOTIFIER_FAILED;
 	}
 
 	if (info->hw_mode == BQ25601_MASTER) {
@@ -3492,6 +3521,8 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 
 	bq2560x_charger_detect_status(info);
 	alarm_init(&info->otg_timer, ALARM_BOOTTIME, NULL);
+	if (info->enable_driver_icl_vote)
+		alarm_init(&info->icl_vote_timer, ALARM_BOOTTIME, icl_vote_timer_func);
 	INIT_DELAYED_WORK(&info->otg_work, bq2560x_charger_otg_work);
 	INIT_DELAYED_WORK(&info->wdt_work,
 			  bq2560x_charger_feed_watchdog_work);
@@ -3558,11 +3589,7 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	}
 
 	info->suspended = false;
-	info->bq_wake_lock = wakeup_source_register(info->dev, "bq2560x_wake_lock");
-	if (!info->bq_wake_lock) {
-		pr_err("bq2560x wakelock register failed!\n");
-		goto USB_REGISTER_NOTIFIER_FAILED;
-	}
+	device_init_wakeup(info->dev, true);
 
 	if (info->hw_mode == BQ25601_MASTER && info->usb_phy->chg_state == USB_CHARGER_PRESENT) {
 		schedule_delayed_work(&info->force_recharge_work, msecs_to_jiffies(13000));
@@ -3625,7 +3652,8 @@ static int bq2560x_charger_remove(struct i2c_client *client)
 
 	usb_unregister_notifier(info->usb_phy, &info->usb_notify);
 
-	wakeup_source_unregister(info->bq_wake_lock);
+	device_init_wakeup(info->dev, false);
+
 	return 0;
 }
 

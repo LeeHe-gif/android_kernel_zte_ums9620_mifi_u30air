@@ -125,7 +125,7 @@ void change_tp_state(lcdchange lcd_change)
 
 	mutex_lock(&cdev->tp_resume_mutex);
 
-	UFP_INFO("current_lcd_state:%s, lcd change:%s\n",
+	UFP_INFO("current_lcd_state:%s, lcd change:%s",
 			lcdstate_to_str[atomic_read(&current_lcd_state)],
 							lcdchange_to_str[lcd_change]);
 	switch (atomic_read(&current_lcd_state)) {
@@ -174,11 +174,15 @@ void change_psensor_state(psensor_state psensor_state)
 		atomic_set(&current_psensor_state, ENABLE_PSENSOR);
 		break;
 	case PSENSOR_BEGIN_SUSPEND:
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 		tpd_notifier_call_chain(PSENSOR_NOTIFY_LCD_SUSPEND);
+#endif
 		atomic_set(&current_psensor_state, PSENSOR_BEGIN_SUSPEND);
 		break;
 	case PSENSOR_BEGIN_RESUME:
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 		tpd_notifier_call_chain(PSENSOR_NOTIFY_LCD_RESUME);
+#endif
 		atomic_set(&current_psensor_state, PSENSOR_BEGIN_RESUME);
 		break;
 	default:
@@ -195,7 +199,7 @@ static void tpd_resume_work(struct work_struct *work)
 	struct ztp_device *cdev = tpd_cdev;
 	int tp_time = 0;
 
-	if (cdev->tp_resume_func) {		
+	if (cdev->tp_resume_func) {
 		cdev->ztp_time.tp_reume_start_time = jiffies;
 		cdev->tp_resume_func(cdev->tp_data);
 		tp_time = get_tp_consum_time(cdev->ztp_time.tp_reume_start_time);

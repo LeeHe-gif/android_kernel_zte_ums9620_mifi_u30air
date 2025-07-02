@@ -271,7 +271,9 @@ static void temp_control_zone_check_reset(void)
 		cdev->start_temp_ctrl_timer = false;
 	}
 	if (cdev->notify_temp_ctrl_zone_down) {
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 		tpd_notifier_call_chain(TEMP_CTRL_ZONE_UP);
+#endif
 		TPD_DMESG("notify temp control zone up");
 		cdev->notify_temp_ctrl_zone_down = false;
 	}
@@ -948,8 +950,9 @@ static void ts_psensor_report_check(struct work_struct *work)
 static void temp_ctrl_zone_down_notify(struct work_struct *work)
 {
 	struct ztp_device *cdev = tpd_cdev;
-
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 	tpd_notifier_call_chain(TEMP_CTRL_ZONE_DOWN);
+#endif
 	TPD_DMESG("notify temp control zone down");
 	cdev->start_temp_ctrl_timer = false;
 	cdev->notify_temp_ctrl_zone_down = true;

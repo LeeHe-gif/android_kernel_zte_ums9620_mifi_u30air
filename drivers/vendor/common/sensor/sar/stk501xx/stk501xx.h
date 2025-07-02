@@ -26,12 +26,21 @@ enum {
 };
 
 // Threshold fill in delta decimal value
-#define STK_SAR_THD_0                       4500
-#define STK_SAR_THD_1                       4500
+#ifdef CONFIG_STKSAR_BOUGAIN
+#define STK_SAR_THD_0                       6000   // 2000 for U30Air_T donot change
+#define STK_SAR_THD_1                       6000   // 2000 for U30Air_T donot change
 #define STK_SAR_THD_2                       4500
 #define STK_SAR_THD_3                       4500
 #define STK_SAR_THD_4                       4500
 #define STK_SAR_THD_5                       4500
+#else
+#define STK_SAR_THD_0                       6000
+#define STK_SAR_THD_1                       6000
+#define STK_SAR_THD_2                       4500
+#define STK_SAR_THD_3                       4500
+#define STK_SAR_THD_4                       4500
+#define STK_SAR_THD_5                       4500
+#endif
 
 #define STK_CADC_DIFF                       30
 
@@ -39,7 +48,7 @@ enum {
     #define PHASE_EN 0x3F  //use all phase
     #define PROXIMITY_THRES 0x21
 #else
-    #define PHASE_EN 0x07  //use phase 0 1 2 4
+    #define PHASE_EN 0x07  //use phase 0 1 2 
     #define PROXIMITY_THRES 0x32
 #endif
 
@@ -132,10 +141,10 @@ typedef enum {
 #define STK_RXIO0_MUX_REG_VALUE                 0x22222222 //PH1
 
 #define STK_ADDR_RXIO1_MUX_REG                  0x005C
-#define STK_RXIO1_MUX_REG_VALUE                 0x22222242 //PH2
+#define STK_RXIO1_MUX_REG_VALUE                 0x22222242 // RX1|CS1 to ph1 donot change
 
 #define STK_ADDR_RXIO2_MUX_REG                  0x0060
-#define STK_RXIO2_MUX_REG_VALUE                 0x22222224
+#define STK_RXIO2_MUX_REG_VALUE                 0x22222422 // RX2|CS2 to ph2 donot change
 
 #define STK_ADDR_RXIO3_MUX_REG                  0x0064
 #define STK_RXIO3_MUX_REG_VALUE                 0x00000000 //Digital mode
@@ -147,7 +156,7 @@ typedef enum {
 #define STK_RXIO5_MUX_REG_VALUE                 0x22222222
 
 #define STK_ADDR_RXIO6_MUX_REG                  0x0070
-#define STK_RXIO6_MUX_REG_VALUE                 0x22222422
+#define STK_RXIO6_MUX_REG_VALUE                 0x22222224 // RX6 to CS0 donot change
 
 #define STK_ADDR_RXIO7_MUX_REG                  0x0074
 #define STK_RXIO7_MUX_REG_VALUE                 0x22222222

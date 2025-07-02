@@ -52,7 +52,7 @@ extern void  cts_driver_exit(void);
 extern int  fts_ts_init(void);
 extern void  fts_ts_exit(void);
 #endif
-#if defined(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_V4_1)
+#if defined(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_PAD)
 extern int  fts_ts_spi_init(void);
 extern void  fts_ts_spi_exit(void);
 #endif
@@ -66,7 +66,7 @@ extern int  tlsc6x_init(void);
 extern void  tlsc6x_exit(void);
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_GCORE_TS) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V3)
+#if defined(CONFIG_TOUCHSCREEN_GCORE_TS) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V3) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V4)
 int gcore_touch_driver_init(void);
 void  gcore_touch_driver_exit(void);
 #endif

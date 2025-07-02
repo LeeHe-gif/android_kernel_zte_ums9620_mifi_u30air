@@ -50,7 +50,9 @@ void axs_esd_reset_process(void)
 #endif
 */
 	tpd_zlog_record_notify(TP_ESD_CHECK_ERROR_NO);
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 	tpd_notifier_call_chain(TP_ESD_CHECK_ERROR);
+#endif
 }
 static void esd_check_func(struct work_struct *work)
 {

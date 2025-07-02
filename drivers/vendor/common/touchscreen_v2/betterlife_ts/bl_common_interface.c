@@ -247,7 +247,7 @@ static int btl_bbat_test(struct ztp_device *cdev)
 		ret = wait_for_completion_timeout(&cdev->bbat_test_completion, msecs_to_jiffies(700));
 		if (!ret) {
 			BTL_ERROR("tp int test fail");
-			cdev->bbat_test_result = TP_INT_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = TP_INT_BBAT_TEST_FAIL;
 		}
 	}
 	cmdBbat[1] = 0x00;
@@ -262,7 +262,7 @@ static int btl_bbat_test(struct ztp_device *cdev)
 	ret = btl_i2c_write(ts->client, CTP_SLAVE_ADDR, cmdBbat, 2);
 	if (ret < 0) {
 		BTL_ERROR("tp rst test fail");
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	BTL_DEBUG("set tp reset to low, test i2c write.");
 	gpio_set_value(ts->reset_gpio_number, 0);
@@ -271,7 +271,7 @@ static int btl_bbat_test(struct ztp_device *cdev)
 	ret = btl_i2c_write(ts->client, CTP_SLAVE_ADDR, cmdBbat, 2);
 	if (ret >= 0) {
 		BTL_ERROR("tp rst test fail");
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	gpio_set_value(ts->reset_gpio_number, 1);
 	msleep(30);

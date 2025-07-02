@@ -44,3 +44,8 @@ config ZTE_LDO_LEDS
 	help
 	  Say Y here, support Zte Ldo Leds Control.
 
+config ZTE_SIM_GPIO_CTL
+	tristate "Zte Sim Gpio Control"
+	default n
+	help
+	  Say Y here, support Beilu Gpio Control.

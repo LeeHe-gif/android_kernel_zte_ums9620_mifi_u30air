@@ -699,7 +699,7 @@ static ssize_t enable_show(struct class *class,
     en = stk->enabled;
     STK_SAR_ERR("enable_show in ");
 
-    return scnprintf(buf, PAGE_SIZE, "enable = %d\n", en);
+    return scnprintf(buf, PAGE_SIZE, "%d\n", en);
 }
 
 static ssize_t enable_store(struct class *class,
@@ -732,7 +732,7 @@ static ssize_t chip_info_show(struct class *class,
         char *buf)
 {
     STK_SAR_ERR("chip_info_show, chip_info = %s\n", chip_info);
-    return snprintf(buf, 25, "%s", chip_info);
+    return snprintf(buf, 25, "%s\n", chip_info);
 }
 static CLASS_ATTR_RO(chip_info);
 
@@ -745,17 +745,69 @@ static ssize_t status_show(struct class *class,
     stk_data *stk = &stk501xx_wrapper_ptr->stk;
 
     //read prox flag
-    stk_read_prox_flag(stk, &prox_flag);
-    stk501xx_read_sar_data(stk, prox_flag);
+    //stk_read_prox_flag(stk, &prox_flag);
+    //stk501xx_read_sar_data(stk, prox_flag);
 
-    for ( i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++) {
+		if (((stk->phase_use_flag >> i) & 0x01) == 0) {
+            // STK_SAR_ERR("stk_report_sar_data:: phase %d not used", i);
+            continue;
+        }
+		
         STK_SAR_ERR("ph[%d] prox flag=%d", i, stk->last_nearby[i]);
+		
+		if(stk->last_nearby[0] == 1 && stk->last_nearby[1] == 1){
+			//prox_flag = prox_flag + (stk->last_nearby[i] >> i);
+			prox_flag = 3;
+		}else if (stk->last_nearby[0] == 1 && stk->last_nearby[1] == 0){
+			//prox_flag = prox_flag + (stk->last_nearby[i] >> i);
+			prox_flag = 1;
+		}else if (stk->last_nearby[0] == 0 && stk->last_nearby[1] == 1){
+			//prox_flag = prox_flag + (stk->last_nearby[i] >> i);
+			prox_flag = 2;
+		}else{
+			prox_flag = 0;
+		}
     }
-
+    
     STK_SAR_ERR("status_show,status = %d\n", prox_flag);
-    return scnprintf(buf, PAGE_SIZE, "flag=0x%x\n", prox_flag);
+    return scnprintf(buf, PAGE_SIZE, "%d\n", prox_flag);
 }
 static CLASS_ATTR_RO(status);
+
+static ssize_t calibrate_show(struct class *class,
+        struct class_attribute *attr,
+        char *buf)
+{
+    STK_SAR_ERR("calibrate_show sar sensor");
+    return snprintf(buf, 64, "200\n");
+}
+
+static ssize_t calibrate_store(struct class *class,
+        struct class_attribute *attr,
+        const char *buf, size_t count)
+{
+    stk_data *stk = &stk501xx_wrapper_ptr->stk;
+    unsigned int data;
+    int error;
+
+    error = kstrtouint(buf, 10, &data);
+    if (error) {
+        STK_SAR_ERR("kstrtoul failed, error=%d", error);
+        return error;
+    }
+
+    STK_SAR_ERR("stk_enable_store, data=%d", data);
+
+    if (1 == data)
+		stk501xx_phase_reset(stk);
+    else
+        STK_SAR_ERR("invalid argument, cali=%d", data);
+
+    return count;
+}
+
+static CLASS_ATTR_RW(calibrate);
 
 static ssize_t batch_show(struct class *class,
         struct class_attribute *attr,
@@ -925,7 +977,13 @@ int stk_i2c_probe(struct i2c_client *client, struct common_function *common_fn)
         STK_SAR_ERR("Create status file failed  err = %d", err);
         goto err_class_creat;
     }
-
+	
+    err = class_create_file(&sar_sensor_class, &class_attr_calibrate);
+    if (err < 0) {
+        STK_SAR_ERR("Create calibrate file failed  err = %d", err);
+        goto err_class_creat;
+    }
+	
     STK_SAR_LOG("Success");
     return 0;
 

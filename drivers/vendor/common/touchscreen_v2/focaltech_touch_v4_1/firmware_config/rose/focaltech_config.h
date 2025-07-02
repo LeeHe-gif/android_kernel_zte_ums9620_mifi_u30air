@@ -246,6 +246,8 @@
  */
 #define FTS_ESDCHECK_EN                         1
 
+#define LCD_ESD_PATCH
+
 /*
  * Production test enable
  * 1: enable, 0:disable(default)

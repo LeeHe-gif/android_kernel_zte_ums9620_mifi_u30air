@@ -1,0 +1,43 @@
+&i2c3 {
+	status = "okay";
+	aw9523b_led@5b {
+		compatible = "awinic,aw9523b";
+		reg = <0x5b>; //addr
+		reset-gpio = <&ap_gpio 14 0x0000>;
+		irq-gpio = <&eic_async 16 0x2008>; //irq gpio
+		aw9523b,led_enable = <1>; //enabel led function, 0 to disable
+		aw9523b,gpio_enable = <0>; //enable gpio function, 0 to disable
+		status = "okay";
+		aw9523b,led {
+			aw9523b,default_imax = <0x11>;
+			aw_led{
+				aw9523b,name = "aw_led"; //cdev name
+				aw9523b,idx_count = <16>; //The number of ports used
+				aw9523b,idx = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>; //The specific port identifier used, This is used here: P1_0 - P1_7
+				aw9523b,default_brightness = <0>;
+				aw9523b,max_brightness = <120>;
+			};
+			led1{
+				aw9523b,name = "green"; //cdev name
+				aw9523b,idx_count = <6>; //The number of ports used
+				aw9523b,idx = <8 11 14 1 4 5>;
+				aw9523b,default_brightness = <0>;
+				aw9523b,max_brightness = <80>;
+			};
+			led2{
+				aw9523b,name = "blue";
+				aw9523b,idx_count = <5>;////The number of ports used
+				aw9523b,idx = <9 12 15 2 6>;
+				aw9523b,default_brightness = <0>;
+				aw9523b,max_brightness = <120>;
+			};
+			led3{
+				aw9523b,name = "red";
+				aw9523b,idx_count = <5>;
+				aw9523b,idx = <10 13 0 3 7>;
+				aw9523b,default_brightness = <0>;
+				aw9523b,max_brightness = <120>;
+			};
+		};
+	};
+};

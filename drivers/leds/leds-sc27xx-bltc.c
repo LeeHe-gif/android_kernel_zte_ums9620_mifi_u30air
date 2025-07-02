@@ -26,7 +26,11 @@
 #define SC27XX_RTC_EN		BIT(7)
 #define SC27XX_RGB_PD		BIT(0)
 #define SC2730_RGB_PD		BIT(12)
+#ifdef ZTE_LEDS_FOR_U30_LITE
+#define SC27XX_RGB_V	        0x50
+#else
 #define SC27XX_RGB_V	        0x10
+#endif
 
 /* Breathing light controller register definition */
 #define SC27XX_LEDS_CTRL	0x00

@@ -29,7 +29,14 @@ config CUSTOM_KERNEL_HALL_SENSOR
 		  Say Y here if you have zte hall sensor.
 		  If unsure, say N.
 
+config CUSTOM_SENSOR_NATIVE_ACC
+	tristate "custom sensor native acc with I2C bus"
+	depends on I2C
+	help
+		Say Y here if you use this
+
 source "drivers/vendor/common/sensor/temperature/Kconfig"
 source "drivers/vendor/common/sensor/sar/Kconfig"
 source "drivers/vendor/common/sensor/skey/Kconfig"
 source "drivers/vendor/common/sensor/hall/Kconfig"
+source "drivers/vendor/common/sensor/native_acc/Kconfig"

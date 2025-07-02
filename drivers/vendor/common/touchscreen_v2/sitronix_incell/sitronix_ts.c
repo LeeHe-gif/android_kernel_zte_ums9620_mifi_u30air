@@ -30,7 +30,7 @@ unsigned char *rbuf;
 
 /* #define SITRONIX_TS_INPUT_PHYS_NAME "sitronix_ts/input0" */
 
-
+#ifndef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 #if defined(CONFIG_FB)
 static void sitronix_ts_resume_work(struct work_struct *work);
 #ifdef _MSM_DRM_NOTIFY_H_
@@ -49,6 +49,7 @@ static int sitronix_drm_notifier_callback(struct notifier_block *self, unsigned 
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 static void sitronix_ts_early_suspend(struct early_suspend *h);
 static void sitronix_ts_late_resume(struct early_suspend *h);
+#endif
 #endif
 
 int sitronix_register_fw_class(void);
@@ -879,7 +880,7 @@ static int sitronix_ts_probe(struct platform_device *pdev)
 		goto err_return;
 	}
 
-
+#ifndef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 #if defined(CONFIG_FB)
 	ts_data->workqueue = create_singlethread_workqueue("sitronix_ts_workqueue");
 	if (!ts_data->workqueue) {
@@ -941,6 +942,7 @@ static int sitronix_ts_probe(struct platform_device *pdev)
 		goto err_register_early_suspend_failed;
 	}
 #endif
+#endif
 
 	ret = sitronix_create_sysfs(ts_data);
 	if (ret) {
@@ -976,6 +978,7 @@ static int sitronix_ts_probe(struct platform_device *pdev)
 
 	return ret;
 
+#ifndef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 #if defined(CONFIG_FB)
 err_create_sitronix_ts_workqueue_failed:
 	if (ts_data->workqueue)
@@ -1000,6 +1003,7 @@ err_create_sitronix_ts_workqueue_failed:
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts_data->early_suspend);
 err_register_early_suspend_failed:
+#endif
 #endif
 
 err_remove_st_proc:
@@ -1029,13 +1033,13 @@ err_return:
 		ts_data->input_dev_proximity = NULL;
 	}
 
-
+/* Started by AICoder, pid:16f6ds1251neecb141da0aeee02450098614cccb */
+	if (ts_data && ts_data->irq > 0)
+		free_irq(ts_data->irq, ts_data);
 
 	if (ts_data)
 		kfree(ts_data);
-
-	if (ts_data->irq > 0)
-		free_irq(ts_data->irq, ts_data);
+/* Ended by AICoder, pid:16f6ds1251neecb141da0aeee02450098614cccb */
 
 	if (wbuf){
 		kfree(wbuf);
@@ -1068,6 +1072,7 @@ static int sitronix_ts_remove(struct platform_device *pdev)
 	if (ts_data->irq > 0)
 		free_irq(ts_data->irq, ts_data);
 
+#ifndef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 #if defined(CONFIG_FB)
 	if (ts_data->workqueue)
 		destroy_workqueue(ts_data->workqueue);
@@ -1087,6 +1092,7 @@ static int sitronix_ts_remove(struct platform_device *pdev)
         drm_panel_notifier_unregister(ts_data->active_panel, &ts_data->drm_notif);
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts_data->early_suspend);
+#endif
 #endif
 
 	if (ts_data->input_dev) {
@@ -1237,6 +1243,7 @@ int sitronix_ts_resume(struct device *dev)
 	return 0;
 }
 
+#ifndef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 #if defined(CONFIG_FB)
 static void sitronix_ts_resume_work(struct work_struct *work)
 {
@@ -1386,6 +1393,7 @@ static void sitronix_ts_late_resume(struct early_suspend *h)
 	sitronix_ts_resume(&ts_data->pdev->dev);
 }
 #endif /* CONFIG_HAS_EARLYSUSPEND */
+#endif
 
 //#ifdef CONFIG_PM
 #if (!defined(CONFIG_FB) && !defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))

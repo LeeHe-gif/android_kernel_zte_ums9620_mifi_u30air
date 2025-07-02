@@ -7,7 +7,7 @@
 
 #define CTS_MODULE1_LCD_NAME		"tongxingda"
 #define CTS_MODULE2_LCD_NAME		"easyquick_huike"
-#define CTS_MODULE3_LCD_NAME		"unknown"
+#define CTS_MODULE3_LCD_NAME		"easyquick_new_huike"
 
 /* #define CONFIG_CTS_PM_FB_NOTIFIER */
 /*default i2c*/

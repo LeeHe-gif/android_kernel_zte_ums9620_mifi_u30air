@@ -31,11 +31,18 @@ ifeq ($(CONFIG_TOUCHSCREEN_FTS_V4_1),y)
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/focaltech_touch_v4_1/focaltech_test/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/focaltech_touch_v4_1/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
 endif
+ifeq ($(CONFIG_TOUCHSCREEN_FTS_PAD),y)
+ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/focaltech_touch_pad/focaltech_test/
+ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/focaltech_touch_pad/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
+endif
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/tlsc6x_v3/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/tlsc6x_v3/tlsc_chip3535/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/tlsc6x_v3/tlsc_chip3536/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/gcore_ts/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/gcore_ts_v3/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
+ifeq ($(CONFIG_TOUCHSCREEN_GCORE_TS_V4),y)
+ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/gcore_ts_v4/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
+endif
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/betterlife_ts/factory_test/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/betterlife_ts/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
 ccflags-y += -I$(srctree)/drivers/vendor/common/touchscreen_v2/sitronix_incell/firmware_config/$(CONFIG_TOUCHSCREEN_BOARD_NAME)/
@@ -197,6 +204,26 @@ zte_tpd-$(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) += \
 
 ######################################################
 
+###################FOCAL TOUCH PAD #####################
+zte_tpd-$(CONFIG_TOUCHSCREEN_FTS_PAD) += \
+	focaltech_touch_pad/focaltech_core.o \
+	focaltech_touch_pad/focaltech_ex_fun.o \
+	focaltech_touch_pad/focaltech_ex_mode.o \
+	focaltech_touch_pad/focaltech_gesture.o \
+	focaltech_touch_pad/focaltech_esdcheck.o \
+	focaltech_touch_pad/focaltech_point_report_check.o \
+	focaltech_touch_pad/focaltech_flash_spi.o \
+	focaltech_touch_pad/focaltech_spi_v2.o \
+	focaltech_touch_pad/focaltech_debug.o \
+	focaltech_touch_pad/focaltech_hp.o \
+	focaltech_touch_pad/focaltech_proximity.o \
+	focaltech_touch_pad/focaltech_common_interface.o \
+	focaltech_touch_pad/focaltech_test/focaltech_test.o \
+	focaltech_touch_pad/focaltech_test/focaltech_test_ini.o \
+	focaltech_touch_pad/focaltech_test/supported_ic/focaltech_test_ft8205p.o
+
+######################################################
+
 ################## tlsc v3 tp driver ####################
 zte_tpd-$(CONFIG_TOUCHSCREEN_TLSC6X_V3) += \
 	tlsc6x_v3/tlsc6x_main.o \
@@ -222,6 +249,16 @@ zte_tpd-$(CONFIG_TOUCHSCREEN_GCORE_TS_V3) += \
 	gcore_ts_v3/gcore_drv_interface.o \
 	gcore_ts_v3/gcore_drv_mp_test.o \
 	gcore_ts_v3/gcore_common_interface.o
+########################################################
+
+################## gcore tp driver #####################
+zte_tpd-$(CONFIG_TOUCHSCREEN_GCORE_TS_V4) += \
+	gcore_ts_v4/gcore_drv_main.o \
+	gcore_ts_v4/gcore_drv_qcom.o \
+	gcore_ts_v4/gcore_drv_fw_update.o \
+	gcore_ts_v4/gcore_drv_interface.o \
+	gcore_ts_v4/gcore_drv_mp_test.o \
+	gcore_ts_v4/gcore_common_interface.o
 ########################################################
 
 ################## betterlife tp driver #####################

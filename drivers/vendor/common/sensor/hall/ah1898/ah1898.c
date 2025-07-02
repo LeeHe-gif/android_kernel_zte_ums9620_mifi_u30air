@@ -85,6 +85,8 @@ static void hall_work_func(struct work_struct *work)
 			input_sync(hall_chip_data->input);
 			input_report_key(hall_chip_data->input, KEY_POWER, 0);*/
 			report_uevent(hall_chip_data, HALL_SENSOR_UP);
+			input_report_switch(hall_chip_data->input, SW_LID, 0);
+			input_sync(hall_chip_data->input);
 			hall_status = 1;
 		} else {
 			pr_info("%s:hall ===switch is on!!the value = %d\n", __func__, value);
@@ -93,6 +95,8 @@ static void hall_work_func(struct work_struct *work)
 			input_sync(hall_chip_data->input);
 			input_report_key(hall_chip_data->input, KEY_POWER, 0);*/
 			report_uevent(hall_chip_data, HALL_SENSOR_DOWN);
+			input_report_switch(hall_chip_data->input, SW_LID, 1);
+			input_sync(hall_chip_data->input);
 			hall_status = 0;
 		}
 	}
@@ -237,6 +241,7 @@ static int  hall_probe(struct platform_device *pdev)
 
 	hall_chip_data->input->name = "hall";
 	set_bit(EV_KEY, hall_chip_data->input->evbit);
+	input_set_capability(hall_chip_data->input, EV_SW, SW_LID);
 	error = input_register_device(hall_chip_data->input);
 	if (error) {
 		pr_err("hall: Unable to register input device, error: %d\n", error);
@@ -293,8 +298,14 @@ static int  hall_probe(struct platform_device *pdev)
 	value_status = gpio_get_value(hall_chip_data->irq);
 	pr_err("gpio-hall: irq %d;\n", value_status);
 	if (value_status == 1) {
+		report_uevent(hall_chip_data, HALL_SENSOR_UP);
+		input_report_switch(hall_chip_data->input, SW_LID, 0);
+		input_sync(hall_chip_data->input);
 		hall_status = 1;
 	} else {
+		report_uevent(hall_chip_data, HALL_SENSOR_DOWN);
+		input_report_switch(hall_chip_data->input, SW_LID, 1);
+		input_sync(hall_chip_data->input);
 		hall_status = 0;
 	}
 

@@ -50,6 +50,8 @@ bool himax_differ_config = false;
 #define TP_TEST_START	2
 #define TP_TEST_END		3
 
+extern int test_irq_pin(void);
+
 struct tpvendor_t himax_vendor_l[] = {
 	{HX_VENDOR_ID_0, HXTS_VENDOR_0_NAME},
 	{HX_VENDOR_ID_1, HXTS_VENDOR_1_NAME},
@@ -327,7 +329,7 @@ static int himax_tp_fw_upgrade(struct ztp_device *cdev, char *fw_name, int fwnam
 			himax_adb_upgrade_firmware->data[2], himax_adb_upgrade_firmware->data[3]);
 
 	himax_int_enable(0);
-
+	tpd_cdev->fw_ready = false;
 #if defined(HX_ZERO_FLASH)
 	I("NOW Running Zero flash update!\n");
 
@@ -359,8 +361,6 @@ static int himax_tp_fw_upgrade(struct ztp_device *cdev, char *fw_name, int fwnam
 				__func__, __LINE__);
 	}
 #endif
-	goto firmware_upgrade_done;
-firmware_upgrade_done:
 	hx_s_core_fp._reload_disable(0);
 	hx_s_core_fp._power_on_init();
 	hx_s_core_fp._read_FW_ver();
@@ -403,6 +403,7 @@ static int himax_ts_suspend(void *himax_data)
 	struct himax_ts_data *ts = (struct himax_ts_data *)himax_data;
 
 	himax_chip_common_suspend(ts);
+	tpd_cdev->fw_ready = false;
 	return 0;
 }
 
@@ -432,7 +433,7 @@ static int himax_set_display_rotation(struct ztp_device *cdev, int mrotation)
 
 	cdev->display_rotation = mrotation;
 	HOR_VER_SWITCH_detect_flag = mrotation;
-	if (ts->suspended)
+	if (ts->suspended || !tpd_cdev->fw_ready)
 	{
 		I("%s:In suspended", __func__);
 		return -EIO;
@@ -503,7 +504,7 @@ static int himax_set_headset_state(struct ztp_device *cdev, int enable)
 
 	ts->hp_en = enable;
 	I("%s: headset_state = %d.\n", __func__, ts->hp_en);
-	if (!ts->suspended)
+	if (!ts->suspended && tpd_cdev->fw_ready)
 		hx_s_core_fp._set_headphone_en(ts->hp_en, ts->suspended);
 	else
 		I("%s: tp is suspended, set headset fail.\n", __func__);
@@ -520,7 +521,7 @@ static int himax_charger_notify_call(struct ztp_device *cdev)
 
 	USB_detect_flag = cdev->charger_mode;
 
-	if(!ts->suspended && (USB_detect_flag != charger_mode_old)) {
+	if(!ts->suspended && tpd_cdev->fw_ready && (USB_detect_flag != charger_mode_old)) {
 		if(USB_detect_flag) {
 			I("%s: charger in.\n", __func__);
 			ts->cable_config[1] = 0x01;
@@ -816,6 +817,131 @@ static int tpd_set_pen_only_mode(struct ztp_device *cdev, u8 pen_only_mode)
 }
 #endif
 
+static int hx_ap_notify_fw_sus_for_rst_test(void)
+{
+	int read_sts = 0;
+	int ret = 0;
+	uint8_t read_tmp[DATA_LEN_4] = {0};
+	uint8_t write_tmp[DATA_LEN_4] = {0};
+
+	hx_parse_assign_cmd(hx_s_ic_setup._func_en, write_tmp, DATA_LEN_4);
+
+	I("%s:Addr:[R%08XH]<<<----Write_data:[0x%02X%02X%02X%02X]\n", __func__,
+		hx_s_ic_setup._func_ap_notify_fw_sus,
+		write_tmp[3], write_tmp[2], write_tmp[1], write_tmp[0]);
+
+	hx_s_core_fp._register_write(
+		hx_s_ic_setup._func_ap_notify_fw_sus,
+		write_tmp,
+		sizeof(write_tmp));
+
+	usleep_range(1000, 1001);
+
+	read_sts = hx_s_core_fp._register_read(
+		hx_s_ic_setup._func_ap_notify_fw_sus,
+		read_tmp,
+		sizeof(read_tmp));
+
+	I("%s:read bus status = %d\n", __func__, read_sts);
+
+	I("%s:Addr:[R%08XH]---->>>Read_data:[0x%02X%02X%02X%02X]\n", __func__,
+		hx_s_ic_setup._func_ap_notify_fw_sus,
+		read_tmp[3], read_tmp[2], read_tmp[1], read_tmp[0]);
+
+	if (read_tmp[3] != write_tmp[3] && read_tmp[2] != write_tmp[2] &&
+		read_tmp[1] != write_tmp[1] && read_tmp[0] != write_tmp[0]) {
+		ret ++;
+	}
+
+	return ret;
+}
+
+static int himax_bbat_test(struct ztp_device *cdev)
+{
+	int ret = 0;
+	int gpio_value = 0;
+	I("%s enter\n", __func__);
+
+	if (!hx_s_ts) {
+		E("%s:error, himax ts is NULL!\n", __func__);
+		return -EIO;
+	}
+
+	if (hx_s_ts->suspended) {
+		E("%s:error, himax tp in suspend!\n", __func__);
+		return -EIO;
+	}
+
+	/* init */
+	cdev->bbat_test_enter = true;
+	cdev->bbat_test_result = 0;
+
+	/* himax tp int test */
+	I("===========================int_test_start==========================\n");
+	ret = test_irq_pin();
+	if (ret) {
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BBAT_TEST_FAIL;
+		E("%s:himax tp irq test failed!\n", __func__);
+	} else {
+		I("%s:himax tp irq test success!\n", __func__);
+	}
+	I("=============================int_test_end==========================\n");
+
+	msleep(100);
+
+	/* himax tp rst test */
+	I("===========================rst_test_start==========================\n");
+	gpio_value = himax_int_gpio_read(hx_s_ts->rst_gpio);
+	I("%s:himax tp now rst is %s\n", __func__, gpio_value ? "high": "low");
+
+	himax_rst_gpio_set(hx_s_ts->rst_gpio, 0);
+	gpio_value = himax_int_gpio_read(hx_s_ts->rst_gpio);
+	if (!gpio_value) {
+		I("%s:set himax tp rst to low success!\n", __func__);
+		ret = hx_ap_notify_fw_sus_for_rst_test();
+		if (ret) {
+			I("%s:himax tp rst low test success!\n", __func__);
+		} else {
+			E("%s:himax tp rst low test failed!\n", __func__);
+			cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
+		}
+	} else {
+		E("%s:set himax tp rst to low failed!\n", __func__);
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
+	}
+
+	msleep(20);
+
+	himax_rst_gpio_set(hx_s_ts->rst_gpio, 1);
+	gpio_value = himax_int_gpio_read(hx_s_ts->rst_gpio);
+	if (gpio_value) {
+		I("%s:set himax tp rst to high success!\n", __func__);
+		ret = hx_ap_notify_fw_sus_for_rst_test();
+		if (!ret) {
+			I("%s:himax tp rst high test success!\n", __func__);
+		} else {
+			E("%s:himax tp rst high test failed!\n", __func__);
+			cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
+		}
+	} else {
+		E("%s:set himax tp rst to high failed!\n", __func__);
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
+	}
+	I("=============================rst_test_end==========================\n");
+
+	cdev->bbat_test_enter = false;
+
+	ret = hx_s_core_fp._0f_op_file_dirly(g_fw_boot_upgrade_name);
+	if (ret) {
+		E("%s: update FW fail, code[%d]!\n", __func__, ret);
+	} else {
+		I("%s: update FW success\n", __func__);
+	}
+
+	I("%s exit\n", __func__);
+	return cdev->bbat_test_result;
+}
+
 void himax_tpd_register_fw_class(void)
 {
 	I("tpd_register_fw_class\n");
@@ -867,6 +993,7 @@ void himax_tpd_register_fw_class(void)
 	tpd_cdev->tp_suspend_func = himax_ts_suspend;
 	tpd_cdev->tp_self_test = tpd_test_cmd_store;
 	tpd_cdev->get_tp_self_test_result = tpd_test_cmd_show;
+	tpd_cdev->tp_bbat_test = himax_bbat_test;
 	tpd_cdev->tp_resume_before_lcd_cmd = true;
 #ifdef HX_PEN_ONLY_SWITCH
 	tpd_cdev->get_pen_only_mode = tpd_get_pen_only_mode;

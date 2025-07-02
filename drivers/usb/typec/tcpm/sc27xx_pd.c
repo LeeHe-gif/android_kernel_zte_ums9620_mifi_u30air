@@ -394,6 +394,7 @@ struct sc27xx_pd {
 	bool can_communication;
 	struct timespec64 rx_err_start_time;
 	struct timespec64 hard_reset_start_time;
+	u64 probe_time;
 };
 
 /*
@@ -1655,7 +1656,6 @@ irq_hard_reset:
 			extcon_set_state_sync(pd->edev, EXTCON_CHG_USB_PD, false);
 		else if (state == false)
 			extcon_set_state_sync(pd->edev, EXTCON_CHG_USB_PD, true);
-
 		sprd_tcpm_pd_hard_reset(pd->sprd_tcpm_port);
 	}
 
@@ -1748,16 +1748,35 @@ static int sc27xx_get_vbus_status(struct sc27xx_pd *pd)
 	u32 status = 0;
 	bool vbus_present;
 	int ret;
+	static bool is_first = true;
+	u64 cur_time = 0, poll_timeout = SC27XX_PD_VBUS_TIMEOUT;
 
 	if (pd->typec_online) {
 		sprd_pd_log(pd, "online start to poll vbus status");
+		if (is_first) {
+			cur_time = ktime_to_ms(ktime_get_boottime());
+			sprd_pd_log(pd, "%s, probe_time: %ld, cur_time: %ld ms",
+						__func__, pd->probe_time, cur_time);
+			if (cur_time - pd->probe_time < 10000)
+					poll_timeout = 1000;
+		}
+
 		ret = regmap_read_poll_timeout(pd->regmap,
 					       pd->typec_base + SC27XX_TYPEC_DBG1,
 					       status,
 					       (status & SC27XX_TYPEC_VBUS_OK),
 					       SC27XX_PD_POLL_VBUS_STATUS,
-					       SC27XX_PD_VBUS_TIMEOUT);
+					       poll_timeout);
+
 		if (ret < 0) {
+			if (is_first) {
+				is_first = false;
+				if (poll_timeout < SC27XX_PD_VBUS_TIMEOUT) {
+					vbus_present = true;
+					goto done;
+				}
+			}
+
 			dev_err(pd->dev, "failed to get vbus status, ret = %d\n", ret);
 			return ret;
 		}
@@ -1779,7 +1798,9 @@ static int sc27xx_get_vbus_status(struct sc27xx_pd *pd)
 		}
 	}
 
+	is_first = false;
 	vbus_present = !!(status & SC27XX_TYPEC_VBUS_OK);
+done:
 	sprd_pd_log(pd, "vbus status = 0x%x, vbus_present = %d", status, vbus_present);
 	if (vbus_present != pd->vbus_present) {
 		pd->vbus_present = vbus_present;
@@ -2214,6 +2235,10 @@ static void sc27xx_pd_detect_typec_work(struct work_struct *work)
 					   typec_detect_work);
 
 	dev_info(pd->dev, "pd try to detect typec extcon\n");
+
+	pd->pd_attached = true;
+	pd->probe_time = ktime_to_ms(ktime_get_boottime());
+
 	if (pd->use_pdhub_c2c) {
 		if (extcon_get_state(pd->extcon, SC27XX_EXTCON_SINK) == true) {
 			pd->is_sink = true;
@@ -2231,8 +2256,6 @@ static void sc27xx_pd_detect_typec_work(struct work_struct *work)
 #if IS_ENABLED(CONFIG_SPRD_TYPEC_DP_ALTMODE)
 	extcon_set_property_capability(pd->edev, EXTCON_DISP_DP, EXTCON_PROP_DISP_HPD);
 #endif
-
-	pd->pd_attached = true;
 }
 
 static const u32 sc27xx_pd_hardreset[] = {

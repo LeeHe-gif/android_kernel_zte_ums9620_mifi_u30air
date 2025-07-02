@@ -119,6 +119,7 @@ void wcn_reset_process(void)
 
 void wcn_dump_process(enum wcn_source_type type)
 {
+	int ret = 0;
 	struct wcn_match_data *g_match_config = get_wcn_match_config();
 
 
@@ -140,13 +141,19 @@ void wcn_dump_process(enum wcn_source_type type)
 	}
 
 	dump_cnt++;
-	if (g_match_config && g_match_config->unisoc_wcn_m3lite)
-		sdiohal_dump_aon_reg();
+	if (g_match_config && g_match_config->unisoc_wcn_m3lite) {
+		ret = sdiohal_dump_aon_reg();
+		if (ret) {
+			mdbg_dump_finish();
+			goto dump_end;
+		}
+	}
 	if (g_match_config && g_match_config->unisoc_wcn_integrated)
 		mdbg_dump_mem_integ(type);
 	else
 		mdbg_dump_mem(type);
 
+dump_end:
 	WCN_INFO("%s dumpmem end\n", __func__);
 }
 

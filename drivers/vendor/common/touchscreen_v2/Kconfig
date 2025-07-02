@@ -21,9 +21,11 @@ source "drivers/vendor/common/touchscreen_v2/focaltech_touch_V3_3/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/focaltech_touch_v4_1/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/focaltech_touch_ufp/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/focaltech_touch_ufp_v4_1/Kconfig"
+source "drivers/vendor/common/touchscreen_v2/focaltech_touch_pad/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/tlsc6x_v3/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/gcore_ts/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/gcore_ts_v3/Kconfig"
+source "drivers/vendor/common/touchscreen_v2/gcore_ts_v4/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/betterlife_ts/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/sitronix_incell/Kconfig"
 source "drivers/vendor/common/touchscreen_v2/omnivision_tcm/Kconfig"
@@ -79,7 +81,7 @@ config TOUCHSCREEN_PSENSOR_REPORT_CHECK
 	help
 	  Say Y here if you use tp promixity mode.If unsure, say N.
 config TOUCHSCREEN_TEMP_CTRL_ZONE_NOTIFY
- 	bool " temperature control zone down/up notify"
+	bool "temperature control zone down/up notify"
  	default n
 	depends on TOUCHSCREEN_VENDOR_V3
  	help

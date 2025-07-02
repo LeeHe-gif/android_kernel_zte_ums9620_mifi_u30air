@@ -1110,6 +1110,7 @@ static ddr_manf_info1 ddr_list[] = {
 	{0x07, "Mosel"},
 	{0x08, "Winbond"},
 	{0x09, "Esmt"},
+	{0x13, "Cxmt"},
 	{0xff, "Micro"}
 };
 

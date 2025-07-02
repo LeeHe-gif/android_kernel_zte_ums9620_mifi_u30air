@@ -43,7 +43,6 @@
 * Private constant and macro definitions using #define
 *****************************************************************************/
 #define ESDCHECK_WAIT_TIME              1000    /* ms */
-#define LCD_ESD_PATCH                   0
 #define ESDCHECK_INTRCNT_MAX            2
 #define ESD_INTR_INTERVALS              200    /* unit:ms */
 
@@ -82,7 +81,7 @@ static struct fts_esdcheck_st fts_esdcheck_data;
 /*****************************************************************************
 * functions body
 *****************************************************************************/
-#if LCD_ESD_PATCH
+#ifdef LCD_ESD_PATCH
 int lcd_need_reset;
 static int tp_need_recovery; /* LCD reset cause Tp reset */
 int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
@@ -90,7 +89,7 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
     int ret = 0;
     u8 val = 0;
 
-    FTS_DEBUG("check LCD ESD");
+    /* FTS_DEBUG("check LCD ESD"); */
     if ( (tp_need_recovery == 1) && (lcd_need_reset == 0) ) {
         tp_need_recovery = 0;
         /* LCD reset, need recover TP state */
@@ -113,6 +112,10 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
         FTS_INFO("LCD ESD, need execute LCD reset");
         lcd_need_reset = 1;
         tp_need_recovery = 1;
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
+        tpd_notifier_call_chain(TP_ESD_CHECK_ERROR);
+#endif
+        lcd_need_reset = 0;
     }
 
     return 0;
@@ -272,7 +275,7 @@ static void esdcheck_func(struct work_struct *work)
                                   struct fts_ts_data, esdcheck_work.work);
 
     if (ts_data->esd_support && fts_esdcheck_data.mode) {
-#if LCD_ESD_PATCH
+#ifdef LCD_ESD_PATCH
         idc_esdcheck_lcderror(ts_data);
 #endif
         esdcheck_algorithm(ts_data);

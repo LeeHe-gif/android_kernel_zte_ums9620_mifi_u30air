@@ -890,28 +890,22 @@ static int wcn_download_image_new(struct wcn_device *wcn_dev)
 	return wcn_download_image(wcn_dev);
 }
 
-int wcn_get_reset_reg_setting(void)
+void wcn_get_reset_reg_setting(struct wcn_device *wcn_dev)
 {
-	const struct firmware *firmware = NULL;
-	int err;
+	u32 reg_val = 0;
+	u32 status = wcn_dev->rstpad_setting;
 
-	err = request_firmware(&firmware, "wifi_board_config.ini", NULL);
-	if (err < 0) {
-		WCN_INFO("[-]%s request firmware fail\n", __func__);
-		return -1;
-	}
-	if (strstr((char *)firmware->data, "RST_REG = 1K8")) {
-		WCN_INFO("[-]%s : RST_REG = 1K8\n", __func__);
-		err = 1;
-	} else if (strstr((char *)firmware->data, "RST_REG = 4K7")) {
-		WCN_INFO("[-]%s : RST_REG = 4K7\n", __func__);
-		err = 2;
-	} else {
-		WCN_INFO("[-]%s has no RST Reg setting\n", __func__);
-		err = -1;
-	}
-	release_firmware(firmware);
-	return err;
+	wcn_regmap_read(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
+		0x0054, &reg_val);
+	/*Using Bit3~Bit7 to set RST PAD*/
+	reg_val &= (~(0xF<<4));
+	reg_val |= (status<<4);
+	wcn_regmap_raw_write_bit(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
+		0x0054, reg_val);
+	wcn_regmap_read(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
+		0x0054, &reg_val);
+	WCN_INFO("Set REG 0x40880054:val=0x%x(RST PAD Setting)!\n",
+		0x0054, reg_val);
 }
 
 char *integ_gnss_firmware_path_get(void)
@@ -2114,11 +2108,10 @@ int btwf_sys_wcnpll_power_on(struct wcn_device *wcn_dev)
 int btwf_sys_poweron(struct wcn_device *wcn_dev)
 {
 	u32 reg_val = 0;
-	u32 status = 0;
 #ifdef FLAG_WCN_USER
 	struct reg_wcn_aon_ahb_reserved2 *sio_pri = NULL;
-#endif
 	u32 *value;
+#endif
 
 	WCN_INFO("[+]%s\n", __func__);
 	if (wcn_dev == NULL) {
@@ -2136,25 +2129,24 @@ int btwf_sys_poweron(struct wcn_device *wcn_dev)
 	}
 
 	if (wcn_platform_chip_type() == WCN_PLATFORM_TYPE_QOGIRL6) {
+		wcn_get_reset_reg_setting(wcn_dev);
+#ifdef FLAG_WCN_USER
 		wcn_regmap_read(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
 			0x0054, &reg_val);
 		WCN_INFO("Set REG 0x40880054:val=0x%x(RST PAD Setting)!\n",
 			reg_val);
 		value = &reg_val;
-		status = wcn_get_reset_reg_setting();
-		if (status > 0) {
-#ifdef FLAG_WCN_USER
-			sio_pri = (struct reg_wcn_aon_ahb_reserved2 *)value;
-			sio_pri->priority = 1;
-			value = (u32 *)sio_pri;
-			wcn_regmap_raw_write_bit(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
-				0x0054, *value);
-#endif
-		}
+		sio_pri = (struct reg_wcn_aon_ahb_reserved2 *)value;
+		sio_pri->priority = 1;
+		value = (u32 *)sio_pri;
+		wcn_regmap_raw_write_bit(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
+			0x0054, *value);
+
 		wcn_regmap_read(wcn_dev->rmap[REGMAP_WCN_AON_AHB],
 			0x0054, &reg_val);
-		WCN_INFO("Set REG 0x40880054:val=0x%x(RST PAD Setting)!\n",
+		WCN_INFO("Set REG 0x40880054:val=0x%x(SIO Thread Priority Setting)!\n",
 			reg_val);
+#endif
 	}
 	/*
 	 * Set SYS,CPU,Cache at reset status

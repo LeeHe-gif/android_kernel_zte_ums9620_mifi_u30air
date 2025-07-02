@@ -328,7 +328,7 @@ int start_test_axs15260(void)
             axs_tp_test_result = axs_tp_test_result | TP_RAWDATA_TEST_FAIL;
         }
     }
-    usleep_range(5000, 5100);
+    msleep(20);
     /* open test */
 	if (test_item->open_test == true) {
         ret = axs15260_open_test(tdata, &temp_result);
@@ -338,7 +338,7 @@ int start_test_axs15260(void)
             axs_tp_test_result = axs_tp_test_result | TP_OPEN_TEST_FAIL;
         }
     }
-    usleep_range(5000, 5100);
+    msleep(20);
     /* short test */
 	if (test_item->short_test == true) {
         ret = axs15260_short_test(tdata, &temp_result);

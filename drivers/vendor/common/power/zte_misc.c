@@ -458,6 +458,7 @@ struct zte_misc_ops node_ops_list[] = {
 	{"batt_temp_debug", NULL, NULL, NULL, NULL},
 	/*capacity transation point debug*/
 	{"cap_debug", NULL, NULL, NULL, NULL},
+	{"cc_connect", NULL, NULL, NULL, NULL},
 	{"charger_power", NULL, NULL, NULL, NULL},
 	{"thermal_control_en", NULL, NULL, NULL, NULL},
 	{"typec_temp", NULL, NULL, NULL, NULL},
@@ -475,6 +476,7 @@ struct zte_misc_ops node_ops_list[] = {
 	{"zlog_enable_test", NULL, NULL, NULL, NULL},
 	{"zte_soc_reserved", NULL, NULL, NULL, NULL},
 	{"ib_trim_offset_val", NULL, NULL, NULL, NULL},
+	{"adc6_value_test", NULL, NULL, NULL, NULL},
 };
 
 static int zte_misc_common_callback_set(const char *val, const struct kernel_param *kp)
@@ -585,6 +587,7 @@ module_param_cb(batt_temp_debug, &zte_misc_common_callback, NULL, 0644);
 * 20: force set 20% as capacity
 */
 module_param_cb(cap_debug, &zte_misc_common_callback, NULL, 0644);
+module_param_cb(cc_connect, &zte_misc_common_callback, NULL, 0644);
 module_param_cb(charger_power, &zte_misc_common_callback, NULL, 0644);
 module_param_cb(thermal_control_en, &zte_misc_common_callback, NULL, 0644);
 module_param_cb(typec_temp, &zte_misc_common_callback, NULL, 0644);
@@ -604,6 +607,8 @@ module_param_cb(is_crypto_exist, &zte_misc_common_callback, NULL, 0664);
 module_param_cb(is_skey_exist, &zte_misc_common_callback, NULL, 0664);
 module_param_cb(zlog_enable_test, &zte_misc_common_callback, NULL, 0664);
 module_param_cb(zte_soc_reserved, &zte_misc_common_callback, NULL, 0664);
+
+module_param_cb(adc6_value_test, &zte_misc_common_callback, NULL, 0664);
 
 int zte_misc_register_callback(struct zte_misc_ops * node_ops, void * arg)
 {

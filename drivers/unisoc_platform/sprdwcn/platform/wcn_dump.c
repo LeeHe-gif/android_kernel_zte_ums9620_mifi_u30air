@@ -502,6 +502,13 @@ static void mdbg_dump_str(char *str, int str_len)
 	WCN_INFO("dump str finish!");
 }
 
+void mdbg_dump_finish(void)
+{
+	/* Make sure only string "marlin_memdump_finish" to slog one time */
+	msleep(100);
+	mdbg_dump_str(WCN_DUMP_END_STRING, strlen(WCN_DUMP_END_STRING));
+}
+
 void gnss_dump_str(char *str, int str_len)
 {
 	mm_segment_t fs;

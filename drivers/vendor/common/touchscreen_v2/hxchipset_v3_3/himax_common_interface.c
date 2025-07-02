@@ -848,7 +848,7 @@ static int himax_bbat_test(struct ztp_device *cdev)
 	I("===========================int_test_start==========================\n");
 	ret = test_irq_pin();
 	if (ret) {
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BBAT_TEST_FAIL;
 		E("%s:himax tp irq test failed!\n", __func__);
 	} else {
 		I("%s:himax tp irq test success!\n", __func__);
@@ -871,11 +871,11 @@ static int himax_bbat_test(struct ztp_device *cdev)
 			I("%s:himax tp rst low test success!\n", __func__);
 		} else {
 			E("%s:himax tp rst low test failed!\n", __func__);
-			cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 		}
 	} else {
 		E("%s:set himax tp rst to low failed!\n", __func__);
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 
 	msleep(20);
@@ -889,11 +889,11 @@ static int himax_bbat_test(struct ztp_device *cdev)
 			I("%s:himax tp rst high test success!\n", __func__);
 		} else {
 			E("%s:himax tp rst high test failed!\n", __func__);
-			cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 		}
 	} else {
 		E("%s:set himax tp rst to high failed!\n", __func__);
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	I("=============================rst_test_end==========================\n");
 

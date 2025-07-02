@@ -14,6 +14,7 @@
 #define _WCN_DUMP_H
 
 int mdbg_dump_mem(enum wcn_source_type type);
+void mdbg_dump_finish(void);
 int dump_arm_reg(void);
 void sprdwcn_bus_armreg_write(unsigned int reg_index, unsigned int value);
 int gnss_dump_data(void *start_addr, int len);

@@ -664,19 +664,19 @@ static int fts_bbat_test(struct ztp_device *cdev)
 	reinit_completion(&cdev->bbat_test_completion);
 	ret = fts_bbat_test_int_pin();
 	if (ret) {
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BBAT_TEST_FAIL;
 	}
 	if (cdev->bbat_int_test == false) {
 		ret = wait_for_completion_timeout(&cdev->bbat_test_completion, msecs_to_jiffies(700));
 		if (!ret) {
 			FTS_ERROR("tp int test fail");
-			cdev->bbat_test_result = TP_INT_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = TP_INT_BBAT_TEST_FAIL;
 		}
 	}
 /* tp rest test*/
 	ret = fts_bbat_test_reset_pin();
 	if (ret) {
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	cdev->bbat_test_enter = false;
 	return cdev->bbat_test_result;

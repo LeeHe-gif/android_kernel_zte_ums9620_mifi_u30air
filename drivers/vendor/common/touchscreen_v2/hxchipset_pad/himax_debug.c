@@ -471,7 +471,7 @@ static ssize_t himax_sense_on_off_write(char *buf, size_t len)
 	return len;
 }
 
-static int test_irq_pin(void)
+int test_irq_pin(void)
 {
 	struct himax_ts_data *ts = hx_s_ts;
 	int result = NO_ERR;

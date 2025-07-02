@@ -795,13 +795,13 @@ static int cts_bbat_test(struct ztp_device *cdev)
 	cdev->bbat_test_result = 0;
 	ret = cts_bbat_test_int_pin(cts_dev);
 	if (ret) {
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_INT_BBAT_TEST_FAIL;
 	}
 /* tp rest test*/
 #ifdef CFG_CTS_HAS_RESET_PIN
 	ret = cts_bbat_test_reset_pin(cts_dev);
 	if (ret) {
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 #endif
 	cdev->bbat_test_enter = false;

@@ -270,6 +270,7 @@ int himax_mcu_power_on_init(void)
 	if (hx_s_core_fp._cascade_cmd != NULL)
 		hx_s_core_fp._cascade_cmd();
 #endif
+	tpd_cdev->fw_ready = true;
 	return ret;
 }
 /* IC side end*/
@@ -1965,15 +1966,25 @@ void himax_resume_proc(bool suspended)
 {
 #if defined(HX_ZERO_FLASH)
 	int result;
+	int count = 0;
 #endif
 
 	I("%s: Entering!\n", __func__);
 #if defined(HX_ZERO_FLASH)
-	if (hx_s_core_fp._0f_op_file_dirly != NULL) {
-		result = hx_s_core_fp._0f_op_file_dirly(g_fw_boot_upgrade_name);
-		if (result)
-			E("%s: update FW fail, code[%d]!!\n", __func__, result);
-	}
+	do {
+		if (hx_s_core_fp._ic_reset != NULL)
+			hx_s_core_fp._ic_reset(0);
+		if (hx_s_core_fp._0f_op_file_dirly != NULL) {
+			result = hx_s_core_fp._0f_op_file_dirly(g_fw_boot_upgrade_name);
+			if (result) {
+				E("%s: update FW fail count:%d, code[%d]!!\n", __func__, count + 1, result);
+			} else {
+				I("%s: update FW success, code[%d]!!\n", __func__, result);
+				break;
+			}
+		}
+		count++;
+	} while (count < 2);
 #else
 	if (hx_s_core_fp._resend_cmd_func != NULL)
 		hx_s_core_fp._resend_cmd_func(suspended);

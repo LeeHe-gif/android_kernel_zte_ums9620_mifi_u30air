@@ -184,30 +184,6 @@ static int wcn_send_atcmd(void *cmd, size_t cmd_len,
 	return 0;
 }
 
-int wcn_set_armlog(bool enable)
-{
-	int ret = 0;
-	char buf[64];
-
-	memset(buf, 0, sizeof(buf));
-	if (!marlin_get_module_status())
-		return 0;
-
-	if (enable == true) {
-		/* open CP2 armlog */
-		scnprintf(buf, (size_t)sizeof(buf), "%s", "at+armlog=1\r\n");
-	} else if (enable == false) {
-		/* close CP2 armlog */
-		scnprintf(buf, (size_t)sizeof(buf), "%s", "at+armlog=0\r\n");
-	}
-	ret = wcn_send_atcmd(buf, strlen(buf), NULL, NULL);
-	if (ret < 0)
-		WCN_ERR("%s fail, ret:%d\n", __func__, ret);
-
-	return ret;
-}
-EXPORT_SYMBOL_GPL(wcn_set_armlog);
-
 char *__wcn_get_sw_ver(void)
 {
 	return sysfs_info.sw_ver_buf;

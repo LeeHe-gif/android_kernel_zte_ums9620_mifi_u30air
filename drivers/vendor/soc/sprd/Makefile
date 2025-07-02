@@ -14,3 +14,4 @@ obj-y += beilu_gpio_ctl/
 obj-y += zsk_input/
 obj-y += hdbd_gps_gpio_ctl/
 obj-y += zte_ldo_leds/
+obj-y += sim_gpio_ctl/

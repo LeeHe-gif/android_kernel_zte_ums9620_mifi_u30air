@@ -1147,7 +1147,6 @@ static void sprd_pcie_remove(struct pci_dev *pdev)
 	WCN_INFO("%s end\n", __func__);
 }
 
-extern int wcn_set_armlog(bool enable);
 static int sprd_ep_suspend(struct device *dev)
 {
 	int ret;
@@ -1249,7 +1248,6 @@ static int sprd_ep_resume(struct device *dev)
 
 	wcn_bus_change_state(priv, WCN_BUS_UP);
 	atomic_set(&priv->is_suspending, 0);
-	wcn_set_armlog(true);
 	mdbg_device_lock_notify();
 	for (chn = 0; chn < 16; chn++) {
 		ops = mchn_ops(chn);

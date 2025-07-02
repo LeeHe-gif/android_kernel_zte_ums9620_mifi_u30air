@@ -90,7 +90,12 @@ static ssize_t vddcama0_status_store(struct device *dev,
 		vol_mv = 0;
 
 	if (vol_mv > 0) {
+#ifdef ZTE_LEDS_FOR_U30_LITE
+		pr_info("%s leds for u30 lite\n", __func__);
+		regulator_set_voltage(data->vddcama0, vol_mv * 3200000, vol_mv * 3200000);
+#else
 		regulator_set_voltage(data->vddcama0, vol_mv * 3300000, vol_mv * 3300000);
+#endif
 		if (regulator_vddcama0_status == 0) {
 			regulator_enable(data->vddcama0);
 			regulator_vddcama0_status = 1;
@@ -137,7 +142,11 @@ static ssize_t vddcama1_status_store(struct device *dev,
 		vol_mv = 0;
 
 	if (vol_mv > 0) {
+#ifdef ZTE_LEDS_FOR_U30_LITE
+		regulator_set_voltage(data->vddcama1, vol_mv * 3200000, vol_mv * 3200000);
+#else
 		regulator_set_voltage(data->vddcama1, vol_mv * 3300000, vol_mv * 3300000);
+#endif
 		if (regulator_vddcama1_status == 0) {
 			regulator_enable(data->vddcama1);
 			regulator_vddcama1_status = 1;

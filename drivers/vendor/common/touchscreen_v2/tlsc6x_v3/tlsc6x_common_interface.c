@@ -288,7 +288,7 @@ static int tlsc6x_bbat_test(struct ztp_device *cdev)
 	reinit_completion(&cdev->bbat_test_completion);
 	/* change to direct mode  */
 	if (tlsc6x_set_dd_mode()) {
-		cdev->bbat_test_result = TP_INT_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = TP_INT_BBAT_TEST_FAIL;
 		goto exit;
 	}
 	// init GPIO_PA[3]INT PIN set output
@@ -313,7 +313,7 @@ static int tlsc6x_bbat_test(struct ztp_device *cdev)
 		ret = wait_for_completion_timeout(&cdev->bbat_test_completion, msecs_to_jiffies(700));
 		if (!ret) {
 			tlsc_err("tp int test fail");
-			cdev->bbat_test_result = TP_INT_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = TP_INT_BBAT_TEST_FAIL;
 		}
 	}
 	gpio_direction_output(pdata->reset_gpio_number, 1);
@@ -322,7 +322,7 @@ static int tlsc6x_bbat_test(struct ztp_device *cdev)
 	ret = tlsc6x_read_bytes_u16addr_sub(g_tlsc6x_client, 0x00, &dwr, 1);
 	if (ret < 0) {
 		tlsc_err("tp rst test fail");
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	gpio_set_value(pdata->reset_gpio_number, 0);
 	msleep(30);
@@ -330,7 +330,7 @@ static int tlsc6x_bbat_test(struct ztp_device *cdev)
 	ret = tlsc6x_read_bytes_u16addr_sub(g_tlsc6x_client, 0x00, &dwr, 1);
 	if (ret == 0) {
 		tlsc_err("tp rst test fail");
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	gpio_set_value(pdata->reset_gpio_number, 1);
 	msleep(60);

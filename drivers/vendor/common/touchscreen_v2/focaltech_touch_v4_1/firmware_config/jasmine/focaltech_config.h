@@ -310,7 +310,7 @@
 /*
  * Numbers of modules support
  */
-#define FTS_GET_MODULE_NUM                     2
+#define FTS_GET_MODULE_NUM                     3
 
 /*
  * module_id: mean vendor_id generally, also maybe gpio or lcm_id...
@@ -321,7 +321,7 @@
  */
 #define FTS_MODULE_ID                          0x67
 #define FTS_MODULE2_ID                         0x82
-#define FTS_MODULE3_ID                         0x0000
+#define FTS_MODULE3_ID                         0x70
 
 #define FTS_DEFAULT_FIRMWARE     "fts_6_58_default_firmware"
 /*
@@ -334,7 +334,7 @@
  */
 #define FTS_MODULE_NAME                        "xinli"
 #define FTS_MODULE2_NAME                       "zgd"
-#define FTS_MODULE3_NAME                       "skyworth"
+#define FTS_MODULE3_NAME                       "dzx"
 
 /*
  * FW.i file for auto upgrade, you must replace it with your own

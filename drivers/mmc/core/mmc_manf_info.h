@@ -18,6 +18,9 @@ mmc_manf_info man_list[] = {
 	{0xF4, "Biwin"},
 	{0x88, "Longsys"},
 	{0xD6, "Longsys"},
+	{0x32, "Phison"},
+	{0xec, "Rayson"},
+	{0xea, "SiliconGo"},
 };
 
 

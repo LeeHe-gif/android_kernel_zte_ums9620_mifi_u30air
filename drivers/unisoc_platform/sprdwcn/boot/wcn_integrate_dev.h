@@ -254,6 +254,7 @@ struct wcn_device {
 	char	firmware_path_ext[FIRMWARE_FILEPATHNAME_LENGTH_MAX];
 	u32	file_length;
 	u32	fstab;
+	u32	rstpad_setting;
 	/* FS OPS info: */
 	struct	wcn_platform_fs platform_fs;
 	int	status;

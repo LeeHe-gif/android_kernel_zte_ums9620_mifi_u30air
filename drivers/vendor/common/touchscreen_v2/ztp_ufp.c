@@ -56,7 +56,7 @@ void ufp_report_gesture_uevent(char *str)
 	kobject_uevent_env(&(ufp_tp_ops.uevent_pdev->dev.kobj), KOBJ_CHANGE, envp);
 
 	__pm_wakeup_event(tp_wakeup, 2000);
-	UFP_INFO("tp_wakeup success");
+	UFP_INFO("__pm_wakeup_event 2000 success");
 	UFP_INFO("%s", str);
 	if (strcmp(str, SINGLE_TAP_GESTURE) == 0) {
 		cdev->ztp_time.tp_single_tap_time = jiffies;
@@ -70,7 +70,7 @@ static inline void __report_ufp_uevent(char *str)
 	char *envp[3];
 
 	if (!ufp_tp_ops.uevent_pdev) {
-		UFP_ERR("uevent pdev is null!\n");
+		UFP_ERR("uevent pdev is null!");
 		return;
 	}
 
@@ -186,7 +186,7 @@ static inline void report_lcd_uevent(struct kobject *kobj, char **envp)
 	envp[1] = NULL;
 	retval = kobject_uevent_env(kobj, KOBJ_CHANGE, envp);
 	if (retval != 0)
-		UFP_ERR("lcd state uevent send failed!\n");
+		UFP_ERR("lcd state uevent send failed!");
 }
 
 void ufp_report_lcd_state(void)
@@ -194,7 +194,7 @@ void ufp_report_lcd_state(void)
 	char *envp[2];
 
 	if (!ufp_tp_ops.uevent_pdev) {
-		UFP_ERR("uevent pdev is null!\n");
+		UFP_ERR("uevent pdev is null!");
 		return;
 	}
 
@@ -207,7 +207,7 @@ int ufp_notifier_cb(int in_lp)
 {
 	int retval = 0;
 
-	UFP_INFO("in lp %d!\n", in_lp);
+	UFP_INFO("in lp %d!", in_lp);
 
 	if (in_lp)
 		change_tp_state(ENTER_LP);

@@ -115,6 +115,7 @@ struct marlin_device {
 	u32	maxsz_btwf;
 	phys_addr_t	base_addr_gnss;
 	u32	maxsz_gnss;
+	struct wakeup_source *stop_marlin_ws;
 };
 
 int marlin_avdd18_dcxo_enable(bool enable);

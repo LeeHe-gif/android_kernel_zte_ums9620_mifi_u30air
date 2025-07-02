@@ -1,0 +1,4 @@
+config ZTE_DDR_INFO
+	tristate "Zte Ddr Info"
+	help
+	    read ddr info.

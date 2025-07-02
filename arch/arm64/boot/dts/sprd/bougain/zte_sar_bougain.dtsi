@@ -15,6 +15,7 @@
 		reg = <0x28>;
 
 		stk501xx,irq-gpio = <&ap_gpio 132 0>;
+		stk501xx,phase_use_flag = <0x03>;
 		chip_name = "STK50153";
 		status = "okay" ;
 	};

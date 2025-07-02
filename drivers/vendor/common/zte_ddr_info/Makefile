@@ -1,0 +1,1 @@
+obj-$(CONFIG_ZTE_DDR_INFO)	+= zte_ddr_info.o

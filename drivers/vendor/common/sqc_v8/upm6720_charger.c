@@ -304,6 +304,8 @@ struct upm6720 {
 	struct delayed_work otg_work;
 };
 
+static int upm6720_enable_adc(struct upm6720 *upm, bool enable);
+
 /************************************************************************/
 static int __upm6720_read_byte(struct upm6720 *upm, u8 reg, u8 *data)
 {
@@ -473,6 +475,19 @@ static int upm6720_set_charge_enable(void *arg, unsigned int en)
 	if (ret) {
 		upm_err("set CHARGE_EN failed ret=%d\n", ret);
 	}
+
+	if (enable) {
+		ret = upm6720_enable_adc(upm, true);
+		if (ret) {
+			upm_err("enable adc failed ret=%d\n", ret);
+		}
+	} else {
+		ret = upm6720_enable_adc(upm, false);
+		if (ret) {
+			upm_err("disable adc failed ret=%d\n", ret);
+		}
+	}
+
 	upm->chip_enabled = en_now;
 
 	return 0;
@@ -2826,7 +2841,6 @@ static int upm6720_charger_probe(struct i2c_client *client,
 		goto err_2;
 	}
 
-	/*device_init_wakeup(upm->dev, 1);*/
 	determine_initial_status(upm);
 
 	if (upm->mode == UPM6720_ROLE_SLAVE) {
@@ -2880,6 +2894,8 @@ static int upm6720_charger_probe(struct i2c_client *client,
 			goto err_3;
 		}
 	}
+
+	device_init_wakeup(upm->dev, true);
 
 	upm_info("upm6720 probe successfully, Part Num:%d\n!", upm->part_no);
 
@@ -2961,6 +2977,7 @@ static int upm6720_charger_remove(struct i2c_client *client)
 {
 	struct upm6720 *upm = i2c_get_clientdata(client);
 
+	device_init_wakeup(upm->dev, false);
 	upm6720_enable_adc(upm, false);
 
 	if (upm->irq)

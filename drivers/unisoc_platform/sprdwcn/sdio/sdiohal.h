@@ -141,6 +141,8 @@
 /* cp sdio reg addr */
 #define SDIOHAL_DT_MODE_ADDR	0x0f
 #define SDIOHAL_PK_MODE_ADDR	0x20
+#define SDIOHAL_CCCR_SDIO_REV	0x0
+#define SDIOHAL_CCCR_SD_VER	0x1
 #define SDIOHAL_CCCR_ABORT	0x06
 #define VAL_ABORT_TRANS		0x01
 #define SDIOHAL_FBR_SYSADDR0	0x15c
@@ -424,7 +426,7 @@ int sdiohal_aon_readb(unsigned int addr, unsigned char *val);
 int sdiohal_aon_writeb(unsigned int addr, unsigned char val);
 int sdiohal_writel(unsigned int system_addr, void *buf);
 int sdiohal_readl(unsigned int system_addr, void *buf);
-void sdiohal_dump_aon_reg(void);
+int sdiohal_dump_aon_reg(void);
 
 /* for dumpmem */
 unsigned int sdiohal_get_carddump_status(void);

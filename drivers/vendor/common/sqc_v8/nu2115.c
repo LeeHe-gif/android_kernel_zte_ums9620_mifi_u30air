@@ -1814,6 +1814,8 @@ static int nu2115_probe(struct i2c_client *client,
 		}
 	}
 
+	device_init_wakeup(chip->dev, true);
+
 	nu_info("%s hw_mode:%d probe end\n", __func__, chip->hw_mode);
 	return 0;
 
@@ -1831,6 +1833,7 @@ static int nu2115_remove(struct i2c_client *client)
 {
 	struct nu2115_device *chip = i2c_get_clientdata(client);
 
+	device_init_wakeup(chip->dev, false);
 
 	if (chip->irq_int)
 		free_irq(chip->irq_int, chip);

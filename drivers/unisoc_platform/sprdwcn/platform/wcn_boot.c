@@ -3167,7 +3167,11 @@ int stop_marlin(enum wcn_sub_sys subsys)
 
 	mutex_lock(&marlin_dev->power_lock);
 	wcn_set_powerdown_flag(true);
+	/* keep ws */
+	__pm_stay_awake(marlin_dev->stop_marlin_ws);
 	if (!marlin_get_power()) {
+		/* release ws */
+		__pm_relax(marlin_dev->stop_marlin_ws);
 		wcn_set_powerdown_flag(false);
 		mutex_unlock(&marlin_dev->power_lock);
 		pr_info("%s no module opend\n", __func__);
@@ -3190,11 +3194,15 @@ int stop_marlin(enum wcn_sub_sys subsys)
 	ret = marlin_set_power(subsys, false);
 
 	wcn_set_powerdown_flag(false);
+	/* release ws */
+	__pm_relax(marlin_dev->stop_marlin_ws);
 	mutex_unlock(&marlin_dev->power_lock);
 	return ret;
 
 unlock:
 	wcn_set_powerdown_flag(false);
+	/* release wake */
+	__pm_relax(marlin_dev->stop_marlin_ws);
 	mutex_unlock(&marlin_dev->power_lock);
 	return -1;
 }
@@ -3243,6 +3251,7 @@ int marlin_probe(struct platform_device *pdev)
 	pr_info("%s: device node name: %s\n", __func__, marlin_dev->np->name);
 
 	mutex_init(&(marlin_dev->power_lock));
+	marlin_dev->stop_marlin_ws = wakeup_source_register(NULL, "stop_marlin keep wakeup source");
 	marlin_dev->power_state = 0;
 	flag_download_done = 0;
 	err = marlin_parse_dt(pdev);
@@ -3384,6 +3393,7 @@ int marlin_remove(struct platform_device *pdev)
 		slp_mgr_deinit();
 	marlin_gpio_free(pdev);
 	mutex_destroy(&marlin_dev->power_lock);
+	wakeup_source_unregister(marlin_dev->stop_marlin_ws);
 	devm_kfree(&pdev->dev, marlin_dev->write_buffer);
 	devm_kfree(&pdev->dev, marlin_dev);
 

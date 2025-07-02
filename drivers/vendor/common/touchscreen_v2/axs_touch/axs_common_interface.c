@@ -534,7 +534,7 @@ static int axs_self_test(struct ztp_device *cdev)
 		} else {
 			break;
 		}
-	} while (retry < 3);
+	} while (retry < 5);
 	if (!axs_fw_download()) {
 		AXS_ERROR("axs_download_init fail!\n");
 	}
@@ -653,19 +653,19 @@ static int axs_bbat_test(struct ztp_device *cdev)
 		ret = wait_for_completion_timeout(&cdev->bbat_test_completion, msecs_to_jiffies(700));
 		if (!ret) {
 			AXS_ERROR("tp int test fail");
-			cdev->bbat_test_result = TP_INT_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = TP_INT_BBAT_TEST_FAIL;
 		}
 	}
 /* tp rest test*/
 	gpio_direction_output(pdata->reset_gpio, 1);
 	msleep(20);
 	if (axs_reset_test_val() != 0x5AA5){
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	gpio_set_value(pdata->reset_gpio, 0);
 	msleep(20);
 	if (axs_reset_test_val() == 0x5AA5){
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL;
 	}
 	gpio_set_value(pdata->reset_gpio, 1);
 	msleep(200);

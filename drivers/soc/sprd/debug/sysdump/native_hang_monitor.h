@@ -28,7 +28,7 @@
 
 #define HANG_INFO_MAX (1 * 1024 * 1024)
 #define MAX_STRING_SIZE 256
-#define WAIT_BOOT_COMPLETE 120	/*wait boot 120 s */
+#define WAIT_BOOT_COMPLETE 420	/*wait boot 420 s */
 #define MAX_KERNEL_BT 16    /* MAX_NR_FRAME for max unwind layer */
 #define NR_FRAME 32
 #define SYMBOL_SIZE_L 140

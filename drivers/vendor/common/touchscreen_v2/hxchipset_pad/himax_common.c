@@ -3527,6 +3527,7 @@ int himax_chip_common_init(void)
 		err = -ENOMEM;
 		goto err_boot_upgrade_wq_failed;
 	}
+	tpd_cdev->fw_ready = false;
 	INIT_DELAYED_WORK(&ts->work_boot_upgrade, himax_boot_upgrade);
 	queue_delayed_work(ts->himax_boot_upgrade_wq, &ts->work_boot_upgrade,
 			msecs_to_jiffies(HX_DELAY_BOOT_UPDATE));

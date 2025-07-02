@@ -86,12 +86,6 @@
 /* #define SITRONIX_SUPPORT_SWU */
 //#define SITRONIX_PROXIMITY_DEMO
 #define SITRONIX_TP_RESUME_BEFORE_DISPON
-#define SITRONIX_VALIDATE_IC_SFRVER
-//#define SITRONIX_SUPPORT_PALM_SUSPEND
-
-//#define SITRONIX_SFRVER_44
-#define SITRONIX_SFRVER_43
-//#define SITRONIX_SFRVER_33
 
 #ifdef SITRONIX_INTERFACE_I2C
 //#define SITRONIX_I2C_ADDRESS_DETECT
@@ -386,7 +380,7 @@ struct sitronix_ts_data {
 	char			cmdio_msg[100];
 	int			cmdio_rwflag;
 	uint16_t		cmdio_addr[8];
-	uint32_t		cmdio_len;
+	uint16_t		cmdio_len;
 	int			cmdio_iotype;
 
 	/* swu */
@@ -567,7 +561,7 @@ int sitronix_get_display_id(unsigned char *buf);
 int sitronix_get_ic_sfrver(void);
 int sitronix_get_ic_position(unsigned char *buf);
 int sitronix_write_driver_cmd(unsigned char cmd, unsigned char *buf, int len);
-int sitronix_read_driver_cmd(unsigned char dc, unsigned char *buf, int len);
+int sitronix_read_driver_cmd(unsigned char dc, unsigned char *buf, uint16_t len);
 int sitronix_ts_enable_raw(struct sitronix_ts_data *ts_data, int type);
 int sitronix_ts_get_rawdata(struct sitronix_ts_data *ts_data, int *rbuf);
 

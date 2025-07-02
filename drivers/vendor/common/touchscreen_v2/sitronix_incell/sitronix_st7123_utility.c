@@ -396,7 +396,7 @@ int sitronix_ts_proximity_control_sensing(struct sitronix_ts_data *ts_data, bool
 
 struct CommandIoPacket {
 unsigned char CmdID;
-unsigned char ValidDataSize;
+int ValidDataSize;
 unsigned char CmdData[30];
 };
 
@@ -1241,7 +1241,7 @@ int sitronix_write_driver_cmd(unsigned char dc, unsigned char *buf, int len)
 }
 
 
-int sitronix_read_driver_cmd(unsigned char dc, unsigned char *buf, int len)
+int sitronix_read_driver_cmd(unsigned char dc, unsigned char *buf, uint16_t len)
 {
 	uint8_t cmd[32] = {0};
 	int ret = 0 , off;	

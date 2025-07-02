@@ -988,6 +988,11 @@ static int wcn_parse_dt(struct platform_device *pdev,
 	if (ret)
 		return -EINVAL;
 
+	ret = of_property_read_u32_index(np,
+					 "sprd,rstpad-setting",
+					 0, &wcn_dev->rstpad_setting);
+	WCN_INFO("wcn_dev->rstpad_setting:%d ret:%d\n", wcn_dev->rstpad_setting, ret);
+
 	/* get wcn efuse values from dts */
 	if (wcn_dev->need_sync_efuse &&
 		strcmp(wcn_dev->name, WCN_MARLIN_DEV_NAME) == 0) {

@@ -71,7 +71,7 @@ struct host_test {
 	int rx_num;
 	int tx_num;
 	int node;
-	int *invalid_node;			//default 1 invalid 0
+	u8 *invalid_node;			//default 1 invalid 0
 
 	int buffer_length;
 	u8 *tmp_buffer;

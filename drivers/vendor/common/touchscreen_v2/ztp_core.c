@@ -1279,7 +1279,9 @@ static ssize_t tp_zlog_debug_write(struct file *file,
 		break;
 	case TP_ESD_CHECK_ERROR_NO:
 		tpd_zlog_record_notify(TP_ESD_CHECK_ERROR_NO);
+#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
 		tpd_notifier_call_chain(TP_ESD_CHECK_ERROR);
+#endif
 		break;
 	case TP_PROBE_ERROR_NO:
 		tpd_zlog_record_notify(TP_PROBE_ERROR_NO);
@@ -1622,7 +1624,7 @@ static ssize_t tp_BBAT_test_read(struct file *file,
 			TPD_DMESG("tp bbat test failed\n");
 		}
 	} else if (tpd_cdev->TP_have_registered == false) {
-		ret = TP_RST_BAAT_TEST_FAIL;
+		ret = TP_RST_BBAT_TEST_FAIL;
 	}
 	len = snprintf(data_buf, sizeof(data_buf), "%d\n", ret);
 	return simple_read_from_buffer(buffer, count, offset, data_buf, len);
@@ -2053,7 +2055,7 @@ static void tpd_report_uevent(u8 gesture_key)
 	struct ztp_device *cdev = tpd_cdev;
 
 	__pm_wakeup_event(tp_wakeup, 2000);
-	TPD_DMESG("tp_wakeup success");
+	TPD_DMESG("__pm_wakeup_event 2000 success");
 	switch (gesture_key) {
 	case single_tap:
 		cdev->ztp_time.tp_single_tap_time = jiffies;
@@ -2204,19 +2206,19 @@ static int ztp_parse_dt(struct device_node *node, struct ztp_device *cdev)
 		if (!ret) {
 			cdev->ghost_check_ignore_edge_area = value;
 		} else {
-			cdev->ghost_check_ignore_edge_area = 0;
+			cdev->ghost_check_ignore_edge_area = 41;
 		}
 		ret = of_property_read_u32(node, "zte,ghost_check_ignore_corner_x", &value);
 		if (!ret) {
 			cdev->ghost_check_ignore_corner_x = value;
 		} else {
-			cdev->ghost_check_ignore_corner_x = 0;
+			cdev->ghost_check_ignore_corner_x = 81;
 		}
 		ret = of_property_read_u32(node, "zte,ghost_check_ignore_corner_y", &value);
 		if (!ret) {
 			cdev->ghost_check_ignore_corner_y = value;
 		} else {
-			cdev->ghost_check_ignore_corner_y = 0;
+			cdev->ghost_check_ignore_corner_y = 81;
 		}
 	} else {
 		cdev->ghost_check_single_time = 25;
@@ -2225,9 +2227,9 @@ static int ztp_parse_dt(struct device_node *node, struct ztp_device *cdev)
 		cdev->ghost_check_multi_count = 8;
 		cdev->ghost_check_start_time = 35;
 		cdev->ghost_check_ignore_id = -1;
-		cdev->ghost_check_ignore_edge_area = 0;
-		cdev->ghost_check_ignore_corner_x = 0;
-		cdev->ghost_check_ignore_corner_y = 0;
+		cdev->ghost_check_ignore_edge_area = 41;
+		cdev->ghost_check_ignore_corner_x = 81;
+		cdev->ghost_check_ignore_corner_y = 81;
 	}
 	TPD_DMESG("ghost_check_single_time is %d", cdev->ghost_check_single_time);
 	TPD_DMESG("ghost_check_multi_time is %d", cdev->ghost_check_multi_time);
@@ -2318,7 +2320,7 @@ static void ztp_probe_work(struct work_struct *work)
 #if defined(CONFIG_TOUCHSCREEN_FTS_V3_3) || defined(CONFIG_TOUCHSCREEN_FTS_UFP)
 	fts_ts_init();
 #endif
-#if defined(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_V4_1)
+#if defined(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_PAD)
 	fts_ts_spi_init();
 #endif
 #ifdef CONFIG_TOUCHSCREEN_CHSC5XXX
@@ -2327,7 +2329,7 @@ static void ztp_probe_work(struct work_struct *work)
 #ifdef CONFIG_TOUCHSCREEN_TLSC6X_V3
 	tlsc6x_init();
 #endif
-#if defined(CONFIG_TOUCHSCREEN_GCORE_TS) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V3)
+#if defined(CONFIG_TOUCHSCREEN_GCORE_TS) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V3) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V4)
 	gcore_touch_driver_init();
 #endif
 #ifdef CONFIG_TOUCHSCREEN_BETTERLIFE_TS
@@ -2452,9 +2454,9 @@ int tpd_zlog_check(tp_error_no error_no)
 	struct ztp_device *cdev = tpd_cdev;
 	int ret = 0;
 
-	if (error_no > TP_ERROR_NO_MAX) {
-		TPD_ZLOG("error_no is to large.\n");
-		return  -EIO;
+	if (error_no >= TP_ERROR_NO_MAX) {
+		TPD_ZLOG("error_no is out of range.\n");
+		return -EIO;
 	}
 
 	if ((cdev->zlog_item.count[error_no] > 0)
@@ -2892,6 +2894,7 @@ static void  zte_touch_deinit(void)
 	zlog_register_work_deinit();
 #endif
 	wakeup_source_unregister(tp_wakeup);
+	TPD_DMESG("wakeup_source_unregister");
 	ztp_release = true;
 }
 
@@ -2935,6 +2938,7 @@ static int zte_touch_probe(struct platform_device *pdev)
 #endif
 	tpd_last_log_init();
 	tp_wakeup = wakeup_source_register(&ztp_dev->pdev->dev, "ztp wakelock");
+	TPD_DMESG("wakeup_source_register");
 #ifdef CONFIG_TOUCHSCREEN_KNUCKLE
 	init_completion(&ztp_dev->diffdata_collect_completion);
 #endif
@@ -2968,9 +2972,6 @@ static void zte_touch_shutdown(struct platform_device *pdev)
 	if (cdev->tpd_shutdown)
 		cdev->tpd_shutdown(cdev);
 	tpd_workqueue_deinit();
-#ifdef CONFIG_TOUCHSCREEN_LCD_NOTIFY
-	lcd_notify_unregister();
-#endif
 }
 
 static const struct of_device_id zte_touch_of_match[] = {
@@ -3064,7 +3065,7 @@ static void __exit zte_touch_exit(void)
 	if (tpd_cdev->tp_chip_id == TS_CHIP_FOCAL)
 		fts_ts_exit();
 #endif
-#if defined(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_V4_1)
+#if defined(CONFIG_TOUCHSCREEN_FTS_UFP_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_V4_1) || defined(CONFIG_TOUCHSCREEN_FTS_PAD)
 if (tpd_cdev->tp_chip_id == TS_CHIP_FOCAL)
 		fts_ts_spi_exit();
 #endif
@@ -3076,7 +3077,7 @@ if (tpd_cdev->tp_chip_id == TS_CHIP_FOCAL)
 	if (tpd_cdev->tp_chip_id == TS_CHIP_TLSC)
 		tlsc6x_exit();
 #endif
-#if defined(CONFIG_TOUCHSCREEN_GCORE_TS) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V3)
+#if defined(CONFIG_TOUCHSCREEN_GCORE_TS) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V3) || defined(CONFIG_TOUCHSCREEN_GCORE_TS_V4)
 	if (tpd_cdev->tp_chip_id == TS_CHIP_GCORE)
 		gcore_touch_driver_exit();
 #endif

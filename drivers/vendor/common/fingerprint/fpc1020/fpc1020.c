@@ -438,6 +438,7 @@ static int fpc_gpio_request(struct device *dev, bool request)
 		}
 
 		if (gpio_is_valid(fpc->rst_gpio)) {
+			gpio_direction_output(fpc->rst_gpio, 0);
 			devm_gpio_free(dev, fpc->rst_gpio);
 			fpc_debug(INFO_LOG, "<<<%s:free rst_gpio success\n", __func__);
 		}

@@ -1,0 +1,1 @@
+obj-$(CONFIG_ZTE_SIM_GPIO_CTL) += sim_gpio_ctl.o

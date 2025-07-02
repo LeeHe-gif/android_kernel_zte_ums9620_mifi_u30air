@@ -81,9 +81,10 @@ do {									\
 #define TP_PANEL_DIFF_TEST_FAIL	  0x10000
 #define TP_COMP_CAP_TEST_FAIL     0x20000
 #define TP_OTHER_TEST_FAIL        0x40000
+#define TP_MODULE_TYPE_ERR        0x0080
 
-#define TP_INT_BAAT_TEST_FAIL     0x01
-#define TP_RST_BAAT_TEST_FAIL     0x02
+#define TP_INT_BBAT_TEST_FAIL     0x01
+#define TP_RST_BBAT_TEST_FAIL     0x02
 
 #define BLANK		1
 #define UNBLANK		0
@@ -328,6 +329,7 @@ struct ztp_device {
 	bool start_temp_ctrl_timer;
 	bool notify_temp_ctrl_zone_down;
 	bool debug_log_enable;
+	bool tpd_proximity_suspended; /* true:suspend false:resume */
 	u16 ufp_circle_center_x;
 	u16 ufp_circle_center_y;
 	u16 ufp_circle_radius;
@@ -343,6 +345,7 @@ struct ztp_device {
 	u16 tp_jitter_timer;
 	u8 sensibility_level;
 	u8 pen_only_mode;
+
 #ifdef CONFIG_TOUCHSCREEN_KNUCKLE
 	bool touch_press;
 	bool collect_diffdata_enable;
@@ -377,6 +380,8 @@ struct ztp_device {
 	int ghost_check_ignore_corner_x;
 	int ghost_check_ignore_corner_y;
 	int differ_max;
+	int tpd_proximity_enable; /* 1:enable 0:disable */
+	int tpd_proximity_state; /* 1:far 0:near */
 
 	struct input_dev *input;
 	struct workqueue_struct *tpd_wq;

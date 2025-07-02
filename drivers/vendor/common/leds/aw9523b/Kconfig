@@ -1,0 +1,7 @@
+config ZTE_LEDS_AW9523B
+	tristate "ZTE_LEDS_AW9523B"
+	depends on I2C
+	default n
+	help
+		  Say Y here if you have crypto breathing light leds chip AW9523B.
+		  If unsure, say N.

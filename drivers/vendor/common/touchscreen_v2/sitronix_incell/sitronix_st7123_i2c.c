@@ -113,9 +113,8 @@ static int sitronix_ts_i2c_write(uint16_t addr, uint8_t *data, uint16_t length, 
 	}
 	buf[0] = (addr >> 8) & 0xFF;
 	buf[1] = (addr) & 0xFF;
-	if (length > 0) {
+	if (length > 0)
 		memcpy(&buf[2], &data[0], length);
-	}
 
 	for (retry = 1; retry <= I2C_RETRY_COUNT; retry++) {
 		if (i2c_transfer(client->adapter, msg, 1) == 1) {
@@ -131,7 +130,7 @@ static int sitronix_ts_i2c_write(uint16_t addr, uint8_t *data, uint16_t length, 
 		ret = -EIO;
 		tpd_zlog_record_notify(TP_I2C_W_ERROR_NO);
 	}
-
+	kfree(buf);
 	return ret;
 }
 

@@ -71,3 +71,9 @@ source "drivers/vendor/common/zte_lcdbl/Kconfig"
 
 source "drivers/vendor/common/stats_info/Kconfig"
 source "drivers/vendor/common/zte_pv_pintest/Kconfig"
+
+#ZTE_DDR
+source "drivers/vendor/common/zte_ddr_info/Kconfig"
+
+#DCMTALK
+source "drivers/vendor/common/dcmtalk/Kconfig"

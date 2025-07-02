@@ -723,6 +723,43 @@ static bool sfp_clatd_dev_check(struct net_device *dev)
 	return false;
 }
 
+static bool sfp_get_real_dev(bool is_v4, int dir, struct nf_conn *ct, int *ipaifindex,
+			     struct net_device *dev_in, struct net_device *dev_out)
+{
+	u8 out_mac[ETH_ALEN];
+	u8 *p_out_mac;
+	struct net_device *port;
+
+	p_out_mac = out_mac;
+
+	if (dev_out->priv_flags & IFF_EBRIDGE) {
+		if (!sfp_get_mac_by_ipaddr(&ct->tuplehash[!dir].tuple.src.u3,
+					   p_out_mac, is_v4))
+			return false;
+
+		port = br_fdb_find_port(dev_out, p_out_mac, 0);
+	} else {
+		if (!sfp_get_mac_by_ipaddr(&ct->tuplehash[dir].tuple.src.u3,
+					   p_out_mac, is_v4))
+			return false;
+
+		port = br_fdb_find_port(dev_in, p_out_mac, 0);
+	}
+
+	if (!port) {
+		FP_PRT_DBG(FP_PRT_DEBUG, "fail to find out port\n");
+		return false;
+	}
+	*ipaifindex = get_hw_iface_by_dev(port);
+	if (*ipaifindex == 0) {
+		FP_PRT_DBG(FP_PRT_DEBUG, "%s is not support IPA scheme\n",
+			   port->name);
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Hook 1: in FORWARD
  * create a new mgr forward entry
@@ -855,51 +892,13 @@ int sfp_filter_mgr_fwd_create_entries(u8 pf, struct sk_buff *skb)
 	/* So far, we do not consider the situation
 	 * in which the WAN iface enslaved by a bridge.
 	 */
-	if (!get_sfp_tether_scheme() &&
-	    in_ipaifindex == 0 &&
-	    (rt->dst.dev->priv_flags & IFF_EBRIDGE ||
-	     skb->dev->priv_flags & IFF_EBRIDGE)) {
-		u8 out_mac[ETH_ALEN];
-		u8 *p_out_mac;
-		bool mac_ret = false;
-		struct net_device *port;
+	if (!get_sfp_tether_scheme()) {
 		bool is_v4 = sfp_get_ip_version(skb);
 
-		p_out_mac = out_mac;
-		mac_ret = sfp_get_mac_by_ipaddr(
-				&ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u3,
-				p_out_mac, is_v4);
-		if (!mac_ret) {
-			if (is_v4) {
-				FP_PRT_DBG(FP_PRT_DEBUG, "fail to parse %pI4's mac\n",
-					   &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u3);
-			} else {
-				FP_PRT_DBG(FP_PRT_DEBUG, "fail to parse %pI6's mac\n",
-					   &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u3);
-			}
+		if (in_ipaifindex == 0 && !sfp_get_real_dev(is_v4, dir, ct, &in_ipaifindex, skb->dev, rt->dst.dev))
 			return 0;
-		}
-		// rtnl_lock();
-		spin_lock_bh(&mgr_lock);
-		if (rt->dst.dev->priv_flags & IFF_EBRIDGE)
-			port = br_fdb_find_port(rt->dst.dev, p_out_mac, 0);
-		else
-			port = br_fdb_find_port(skb->dev, p_out_mac, 0);
-
-		if (!port) {
-			// rtnl_unlock();
-			spin_unlock_bh(&mgr_lock);
-			FP_PRT_DBG(FP_PRT_DEBUG, "fail to find out port\n");
+		else if (out_ipaifindex == 0 && !sfp_get_real_dev(is_v4, dir, ct, &out_ipaifindex, skb->dev, rt->dst.dev))
 			return 0;
-		}
-		// rtnl_unlock();
-		spin_unlock_bh(&mgr_lock);
-		in_ipaifindex = get_hw_iface_by_dev(port);
-		if (in_ipaifindex == 0) {
-			FP_PRT_DBG(FP_PRT_DEBUG, "%s is not support IPA scheme\n",
-				   port->name);
-			return 0;
-		}
 	}
 
 	FP_PRT_DBG(FP_PRT_DEBUG, "iface info [%s %d, %s %d] [%d, %d], dir %d\n",

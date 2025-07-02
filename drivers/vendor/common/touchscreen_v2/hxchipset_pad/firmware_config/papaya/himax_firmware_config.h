@@ -70,21 +70,21 @@
 
 /* Enable it if driver go into suspend/resume twice */
 /*#undef HX_CONFIG_DRM*/
-#define HXTP_DIFFER_CONFIG "huaying"
+#define HXTP_DIFFER_CONFIG "lead"
 
 enum fix_touch_info {
-	FIX_HX_RX_NUM = 48,
+	FIX_HX_RX_NUM = 50,
 	FIX_HX_TX_NUM = 32,
 #ifdef HXTP_DIFFER_CONFIG
-	FIX_HX_RX_NUM_CONFIG = 50,
+	FIX_HX_RX_NUM_CONFIG = 48,
 	FIX_HX_TX_NUM_CONFIG = 32,
 	FIX_HX_INT_IS_EDGE_CONFIG = true,
 	FIX_HX_STYLUS_FUNC_CONFIG = 0,
 #endif
 	FIX_HX_BT_NUM = 0,
 	FIX_HX_MAX_PT = 10,
-	FIX_HX_INT_IS_EDGE = true,
-	FIX_HX_STYLUS_FUNC = 0,
+	FIX_HX_INT_IS_EDGE = false,
+	FIX_HX_STYLUS_FUNC = 1,
 	FIX_HX_STYLUS_ID_V2 = 0,
 	FIX_HX_STYLUS_RATIO = 10,
 #if defined(HX_TP_PROC_2T2R)
@@ -106,8 +106,8 @@ enum hxtp_vendor_id {
  */
 #define HXTS_VENDOR_0_NAME	"huaying"
 #define HXTS_VENDOR_1_NAME	"lead"
-#define HXTS_VENDOR_2_NAME	"unknown"
-#define HXTS_VENDOR_3_NAME	"unknown"
+#define HXTS_VENDOR_2_NAME	"lectron"
+#define HXTS_VENDOR_3_NAME	"dijing"
 #ifdef HX_ZERO_FLASH
 /* this macro need be configured refer to module*/
 #define HIMAX_DEFAULT_FIRMWARE        "himax_10_95_default_firmware"

@@ -1,0 +1,22 @@
+/*
+ * this file is ued to change sprd dtsi which can't be changed by overlay
+ * such as /delete-node/ /delete-property/ and alises
+ */
+
+#include "zte_charger_strose.dtsi"
+#include "zte_breath_led.dtsi"
+#include "zte_sar.dtsi"
+
+/{
+	sim_gpio_ctl {
+		compatible = "zte,sim_gpio_ctrl";
+		status = "okay";
+		esim1-psim-switch-gpio = <&ap_gpio 105 0>;
+		esim2-esim3-switch-gpio = <&ap_gpio 106 0>;
+		soft-psim-switch-gpio = <&ap_gpio 108 0>;
+	};
+};
+
+&reserved_memory {
+	/delete-node/ dptx_hdcp@fff10000;
+};

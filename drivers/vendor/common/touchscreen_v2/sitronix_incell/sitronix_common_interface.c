@@ -184,6 +184,9 @@ static int tpd_test_cmd_store(struct ztp_device *cdev)
 	int retry = 0;
 
 	stmsg("%s:enter.\n", __func__);
+#ifdef SKIP_TPD_SELFTEST
+	return 0;
+#endif
 	sitronix_ts_irq_enable(gts, false);
 
 	gts->upgrade_doing = true;

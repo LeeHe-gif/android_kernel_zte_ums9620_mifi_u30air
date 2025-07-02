@@ -169,7 +169,7 @@ static int axs_test_main_init(void)
 	}
     memset(tdata->tmp_buffer, 0, tdata->buffer_length);
 
-	tdata->invalid_node = kzalloc(tdata->node, GFP_KERNEL);
+	tdata->invalid_node = (u8 *)kzalloc(tdata->node * sizeof(u8), GFP_KERNEL);
 	if(tdata->invalid_node == NULL) {
 		AXS_ERROR("test->tmp_buffer data buffer malloc fail\n");
 		return -ENOMEM;

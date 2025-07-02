@@ -190,6 +190,9 @@ int sqc_notify_daemon_changed(int chg_id, int msg_type, int msg_val);
 #define SD76930_REG_TON_SETTING_MASK        GENMASK(2, 0)
 
 
+/* SD76930_REG_F5 (0xF5)*/
+#define SD76930_REG_F5					0xF5
+#define SD76930_REG_F5_BIT65_MASK        GENMASK(6, 5)
 
 #define SD76930_FGU_NAME				"sc27xx-fgu"
 #define BIT_DP_DM_BC_ENB				BIT(0)
@@ -392,6 +395,39 @@ static int sd76930_charger_set_termina_vol(struct sd76930_charger_info *info, u3
 		
 	return ret;
 }
+/*fix vbus not discharge bug ADD*/
+static void sd76930_operate_state1(struct sd76930_charger_info *info,int val)
+{
+	u8 reg_val;
+	if (val == 1) {
+		sd76930_write(info,0xE0,0x64);
+		sd76930_write(info,0xE0,0x62);
+		sd76930_write(info,0xE0,0x67);
+		sd76930_read(info,0xE0,&reg_val);
+		if(reg_val == 0x03) {
+			ZTE_CM_IC_INFO("set val = %d success\n", val);
+		}
+	} else {
+		sd76930_write(info,0xE0,0x00);
+		sd76930_read(info,0xE0,&reg_val);
+		if (reg_val == 0x00) {
+			ZTE_CM_IC_INFO("set val = %d success\n", val);
+		}
+	}
+}
+
+static int sd76930_charger_set_reg_0xf5(struct sd76930_charger_info *info)
+{
+	int ret;
+
+	sd76930_operate_state1(info,1);
+
+	ret = sd76930_update_bits(info, SD76930_REG_F5, SD76930_REG_F5_BIT65_MASK, 0x20);
+
+	sd76930_operate_state1(info,0);
+	return ret;
+}
+/*fix vbus not discharge bug ADD END*/
 
 static int sd76930_charger_hw_init(struct sd76930_charger_info *info)
 {
@@ -491,6 +527,12 @@ static int sd76930_charger_hw_init(struct sd76930_charger_info *info)
 		ZTE_CM_IC_ERROR("set max vbat failed ret = %d\n", ret);
 		return ret;
 	}
+/*set F5 BIT 65 */
+	ret = sd76930_charger_set_reg_0xf5(info);
+	if (ret) {
+		ZTE_CM_IC_ERROR("set sd76930 REG F5 ERROR = %d\n", ret);
+		return ret;
+	}
 	/*set ovp 10.5v*/
 	ret = sd76930_charger_set_ovp(info, SD76930_FCHG_OVP_10V5);
 	if (ret) {
@@ -527,8 +569,6 @@ static void sd76930_charger_stop_charge(struct sd76930_charger_info *info)
 {
 	int ret;
 
-	ZTE_CM_IC_INFO("enter!\n");
-
 	if (!IS_ERR(info->gpiod)) {
 		ZTE_CM_IC_ERROR("gpiod failed!\n");
 		gpiod_set_value_cansleep(info->gpiod, DISABLE_CHARGE);
@@ -547,7 +587,6 @@ static int sd76930_charger_set_current(struct sd76930_charger_info *info, u32 cu
 {
 	u8 reg_val ;
 
-	ZTE_CM_IC_INFO(" cur= %d\n", cur);
 	/*if ICHG_OFFSET = 1, chg cur + 100mA*/
 	if(cur >= 3780000)
 	{
@@ -556,7 +595,7 @@ static int sd76930_charger_set_current(struct sd76930_charger_info *info, u32 cu
 		reg_val = cur / 60000;
 	}
 
-	ZTE_CM_IC_INFO("reg_val= 0x%x\n", reg_val);
+	ZTE_CM_IC_INFO("cur= %d, reg_val= 0x%x\n", cur, reg_val);
 	return sd76930_update_bits(info, SD76930_REG_1, SD76930_REG_IBAT_CURRENT_MASK,
 				    reg_val);
 }
@@ -606,9 +645,9 @@ static int32_t sd76930_set_wd_reset(struct sd76930_charger_info *chip)
 */
 static int sd76930_charger_set_input_limit_current(struct sd76930_charger_info *info, u32 limit_cur)
 {
-	u8 reg_val;
+	u8 reg_val, reg_f5_val;
+	int ret = 0;
 
-	ZTE_CM_IC_INFO("limit_cur = %d\n", limit_cur);
 	if(limit_cur >= 3200000)
 	{
 		reg_val = 0x1f;
@@ -616,9 +655,15 @@ static int sd76930_charger_set_input_limit_current(struct sd76930_charger_info *
 	{
 		reg_val = limit_cur / 100000 - 1;
 	}
-	ZTE_CM_IC_INFO("reg_val = 0x%x\n", reg_val);	
-	return sd76930_update_bits(info, SD76930_REG_0, SD76930_REG_INPUT_CURRENT_MASK,
+
+	ret = sd76930_update_bits(info, SD76930_REG_0, SD76930_REG_INPUT_CURRENT_MASK,
 				    reg_val);
+
+	sd76930_read(info, 0xf5, &reg_f5_val);
+
+	ZTE_CM_IC_INFO("SD76930_REG[F5]=0X%2X, limit_cur=%d, SD76930_REG[00]=0X%2X\n",reg_f5_val, limit_cur, reg_val);
+
+	return ret;
 }
 
 static int sd76930_charger_get_input_limit_current(struct sd76930_charger_info *info, u32 *limit_cur)

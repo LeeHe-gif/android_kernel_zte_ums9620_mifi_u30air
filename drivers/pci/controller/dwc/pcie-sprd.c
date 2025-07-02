@@ -520,6 +520,11 @@ int sprd_pcie_configure_device(struct platform_device *pdev)
 		mutex_unlock(&ctrl->sprd_pcie_mutex);
 		return 0;
 	}
+	if (ctrl->is_suspended) {
+		dev_err(&pdev->dev, "PCIe controller never comes here\n");
+		mutex_unlock(&ctrl->sprd_pcie_mutex);
+		return -EPERM;
+	}
 
 	ctrl->retries = 0;
 	while (ctrl->reinit_disable && ctrl->retries++ < REINIT_RETRIES)
@@ -561,6 +566,11 @@ int sprd_pcie_unconfigure_device(struct platform_device *pdev)
 		dev_err(&pdev->dev, "PCIe hasn't been scanned yet!\n");
 		mutex_unlock(&ctrl->sprd_pcie_mutex);
 		return -ENODEV;
+	}
+	if (ctrl->is_suspended) {
+		dev_err(&pdev->dev, "PCIe has alreadly suspend\n");
+		mutex_unlock(&ctrl->sprd_pcie_mutex);
+		return -EPERM;
 	}
 
 	root_bus = to_root_bus_from_pdev(pdev);
@@ -749,10 +759,14 @@ static int sprd_pcie_suspend_noirq(struct device *dev)
 	if (!ctrl->is_powered)
 		return 0;
 
+	mutex_lock(&ctrl->sprd_pcie_mutex);
+
 	ctrl->is_suspended = 1;
 	ret = sprd_pcie_host_uninit(pdev);
 	if (ret < 0)
 		dev_err(dev, "suspend noirq warning\n");
+
+	mutex_unlock(&ctrl->sprd_pcie_mutex);
 
 	return 0;
 }
@@ -774,11 +788,15 @@ static int sprd_pcie_resume_noirq(struct device *dev)
 	if (!ctrl->is_powered)
 		return 0;
 
+	mutex_lock(&ctrl->sprd_pcie_mutex);
+
 	ret = sprd_pcie_host_reinit(pdev);
 	if (ret < 0)
 		dev_err(dev, "resume noirq warning\n");
 
 	ctrl->is_suspended = 0;
+
+	mutex_unlock(&ctrl->sprd_pcie_mutex);
 
 	return 0;
 }

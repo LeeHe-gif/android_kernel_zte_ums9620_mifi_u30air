@@ -312,7 +312,12 @@ bool st_icp_flash_wakeup(st_u16 *flash_write_block_size)
 	tx_buf[4] = 0xA5;
 	tx_buf[5] = 0x3C;
 
+	/* Started by AICoder, pid:28394u9dffu852e140870b4e609a7107bd84ee51 */
 	ret = st_icp_write(tx_buf, 5);
+	if (ret < 0) {
+		sterr("Error: Failed to write data\n");
+	}
+	/* Ended by AICoder, pid:28394u9dffu852e140870b4e609a7107bd84ee51 */
 	ret = st_icp_write(tx_buf, 5);	/* x2 */
 
 	if (ret < 0) {
@@ -536,23 +541,30 @@ int st_icp_flash_write_block(st_u8 *data, int offset, st_u16 flash_write_block_s
 	return 0;
 }
 
+/* Started by AICoder, pid:v788ee20c6v1243140f70a234017687643f28d7c */
 int st_icp_flash_write(st_u8 *data, int offset, int write_len_total, st_u16 flash_write_block_size)
 {
 	st_u16 start_page;
 	st_u16 page_offset;
-	int write_byte;
+	int write_byte = 0;
 	st_u16 write_len_once;
-	st_u8 *temp_buf;
+	st_u8 *temp_buf = NULL;
 	int retry = 0;
 	int isSuccess = 0;
 	int i;
 
 	temp_buf = kzalloc(ST_FLASH_PAGE_SIZE, GFP_KERNEL);
+	if (!temp_buf) {
+		stmsg("Failed to allocate memory for temp_buf\n");
+		return -ENOMEM;
+	}
+
 	stmsg("Write flash offset:0x%X , length:0x%X\n", offset, write_len_total);
 
-	write_byte = 0;
-	if (write_len_total == 0)
+	if (write_len_total == 0) {
+		kfree(temp_buf);
 		return write_byte;
+	}
 
 	if ((offset + write_len_total) > ST_FLASH_SIZE)
 		write_len_total = ST_FLASH_SIZE - offset;
@@ -561,8 +573,10 @@ int st_icp_flash_write(st_u8 *data, int offset, int write_len_total, st_u16 flas
 	page_offset = offset % ST_FLASH_PAGE_SIZE;
 	while (write_len_total > 0) {
 		if ((page_offset != 0) || (write_len_total < ST_FLASH_PAGE_SIZE)) {
-			if (st_icp_flash_read(temp_buf, start_page * ST_FLASH_PAGE_SIZE, ST_FLASH_PAGE_SIZE) < 0)
+			if (st_icp_flash_read(temp_buf, start_page * ST_FLASH_PAGE_SIZE, ST_FLASH_PAGE_SIZE) < 0) {
+				kfree(temp_buf);
 				return -EIO;
+			}
 		}
 
 		write_len_once = ST_FLASH_PAGE_SIZE - page_offset;
@@ -587,6 +601,7 @@ int st_icp_flash_write(st_u8 *data, int offset, int write_len_total, st_u16 flas
 		}
 		if (isSuccess == 0) {
 			stmsg("st_icp_flash_write write page %d error , break\n", start_page);
+			kfree(temp_buf);
 			return -EIO;
 		} else
 			start_page++;
@@ -599,6 +614,7 @@ int st_icp_flash_write(st_u8 *data, int offset, int write_len_total, st_u16 flas
 	kfree(temp_buf);
 	return write_byte;
 }
+/* Ended by AICoder, pid:v788ee20c6v1243140f70a234017687643f28d7c */
 
 int sitronix_do_upgrade_flash_icp_all(void)
 {

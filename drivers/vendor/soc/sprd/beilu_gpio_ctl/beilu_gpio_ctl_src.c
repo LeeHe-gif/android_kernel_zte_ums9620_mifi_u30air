@@ -27,11 +27,19 @@
 #define ZTE_BEILU_PROC_DIR "bl_gpios"
 #define ZTE_BEILU_MCU_RESET "mcu_reset"
 #define ZTE_BEILU_MCU_IRQ "mcu_irq"
-struct proc_dir_entry *beilu_proc_dir = NULL;
-static int  mcu_reset_gpio, mcu_en_gpio, mcu_irq_gpio, mcu_ready_gpio, mcu_ready_int;
-struct mutex mcu_reset_lock;
-static struct wakeup_source *bl_mcu_ready_wakelock;
+#define ZTE_BEILU_MCU_UWB_STAT "mcu_uwb_stat"
+#define ZTE_BEILU_MCU_READY "mcu_ready"
+#define ZTE_BEILU_MCU_BACKIO1 "mcu_backio1"
+#define ZTE_BEILU_MCU_BACKIO2 "mcu_backio2"
 
+
+struct proc_dir_entry *beilu_proc_dir = NULL;
+static int  mcu_reset_gpio, mcu_en_gpio, mcu_irq_gpio, mcu_ready_gpio;	// mcu_ready_int
+static int  mcu_uwb_stat_gpio, mcu_backio1_gpio, mcu_backio2_gpio;
+struct mutex mcu_reset_lock;
+//static struct wakeup_source *bl_mcu_ready_wakelock;
+
+/*reset pin has been reversed by a transistor*/
 static ssize_t mcu_reset_read(struct file *file,
 								char __user *buffer, size_t count, loff_t * offset) {
 	ssize_t ret = 0;
@@ -41,7 +49,7 @@ static ssize_t mcu_reset_read(struct file *file,
 	if( *offset > 0)
 		return 0;
 	mutex_lock(&mcu_reset_lock);
-	reset_gpio_value = gpio_get_value(mcu_reset_gpio);
+	reset_gpio_value = gpio_get_value(mcu_reset_gpio)?0:1;
 	snprintf(reset_flag, sizeof(reset_flag), "%d", reset_gpio_value);
 	ret = copy_to_user(buffer, &reset_flag, sizeof(reset_flag));
 	if (ret < 0) {
@@ -68,13 +76,19 @@ static ssize_t mcu_reset_write(struct file *file,
 		return ret;
 	}
 	log_debug("reset_flag is %s, count is %d, ret is %d.\n", reset_flag, count, ret);
-	if(reset_flag[0] == '1') {
-		log_err("pls reset mcu!!!\n");
+	if(reset_flag[0] == '2') {
+		log_err("mcu_reset!\n");
 		gpio_set_value(mcu_reset_gpio, 1);
 		gpio_set_value(mcu_en_gpio, 1);
 		msleep(20);
 		gpio_set_value(mcu_reset_gpio, 0);
 		gpio_set_value(mcu_en_gpio, 0);
+	}else if(reset_flag[0] == '1') {
+		log_err("mcu_reset_gpio = 0!\n");
+		gpio_set_value(mcu_reset_gpio, 0);
+	}else if(reset_flag[0] == '0') {
+		log_err("mcu_reset_gpio = 1!!!\n");
+		gpio_set_value(mcu_reset_gpio, 1);
 	}
 	mutex_unlock(&mcu_reset_lock);
 
@@ -117,12 +131,182 @@ static ssize_t mcu_irq_write(struct file *file,
 		return ret;
 	}
 	log_debug("irq_flag is %s, count is %d, ret is %d.\n", irq_flag, count, ret);
-	if(irq_flag[0] == '1') {
+	if(irq_flag[0] == '2') {
 		log_err("pls sw reset mcu!!!\n");
-		gpio_set_value(mcu_irq_gpio, 1);
+		gpio_set_value(mcu_irq_gpio, 0);
 		msleep(20);
+		gpio_set_value(mcu_irq_gpio, 1);
+	}else if(irq_flag[0] == '1') {
+		log_err("mcu_irq_gpio = 1!!!\n");
+		gpio_set_value(mcu_irq_gpio, 1);
+	}else if(irq_flag[0] == '0') {
+		log_err("mcu_irq_gpio = 0!!!\n");
 		gpio_set_value(mcu_irq_gpio, 0);
 	}
+	mutex_unlock(&mcu_reset_lock);
+
+	return count;
+}
+
+static ssize_t mcu_uwb_stat_read(struct file *file,
+								char __user *buffer, size_t count, loff_t * offset) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[4];
+	int mcu_uwb_stat_gpio_value = 0;
+
+	if( *offset > 0)
+		return 0;
+	mutex_lock(&mcu_reset_lock);
+	mcu_uwb_stat_gpio_value = gpio_get_value(mcu_uwb_stat_gpio);
+	snprintf(irq_flag, sizeof(irq_flag), "%d", mcu_uwb_stat_gpio_value);
+	ret = copy_to_user(buffer, &irq_flag, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data to user space!\n");
+		return ret;
+	}
+	ret = sizeof(irq_flag);
+	*offset += ret;
+	mutex_unlock(&mcu_reset_lock);
+
+	log_debug("count:%d ret:%d, irq_flag:%s,offset:%lld\n", count, ret, irq_flag, *offset);
+	return ret;
+}
+
+static ssize_t mcu_uwb_stat_write(struct file *file,
+								const char __user *buffer, size_t count, loff_t *pos) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[8];
+
+	mutex_lock(&mcu_reset_lock);
+	ret = copy_from_user(irq_flag, buffer, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data from user space!\n");
+		return ret;
+	}
+	log_debug("irq_flag is %s, count is %d, ret is %d.\n", irq_flag, count, ret);
+	mutex_unlock(&mcu_reset_lock);
+
+	return count;
+}
+
+static ssize_t mcu_ready_read(struct file *file,
+								char __user *buffer, size_t count, loff_t * offset) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[4];
+	int mcu_ready_gpio_value = 0;
+
+	if( *offset > 0)
+		return 0;
+	mutex_lock(&mcu_reset_lock);
+	mcu_ready_gpio_value = gpio_get_value(mcu_ready_gpio);
+	snprintf(irq_flag, sizeof(irq_flag), "%d", mcu_ready_gpio_value);
+	ret = copy_to_user(buffer, &irq_flag, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data to user space!\n");
+		return ret;
+	}
+	ret = sizeof(irq_flag);
+	*offset += ret;
+	mutex_unlock(&mcu_reset_lock);
+
+	log_debug("count:%d ret:%d, irq_flag:%s,offset:%lld\n", count, ret, irq_flag, *offset);
+	return ret;
+}
+
+static ssize_t mcu_ready_write(struct file *file,
+								const char __user *buffer, size_t count, loff_t *pos) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[8];
+
+	mutex_lock(&mcu_reset_lock);
+	ret = copy_from_user(irq_flag, buffer, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data from user space!\n");
+		return ret;
+	}
+	log_debug("irq_flag is %s, count is %d, ret is %d.\n", irq_flag, count, ret);
+	mutex_unlock(&mcu_reset_lock);
+
+	return count;
+}
+
+static ssize_t mcu_backio1_read(struct file *file,
+								char __user *buffer, size_t count, loff_t * offset) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[4];
+	int mcu_backio1_gpio_value = 0;
+
+	if( *offset > 0)
+		return 0;
+	mutex_lock(&mcu_reset_lock);
+	mcu_backio1_gpio_value = gpio_get_value(mcu_backio1_gpio);
+	snprintf(irq_flag, sizeof(irq_flag), "%d", mcu_backio1_gpio_value);
+	ret = copy_to_user(buffer, &irq_flag, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data to user space!\n");
+		return ret;
+	}
+	ret = sizeof(irq_flag);
+	*offset += ret;
+	mutex_unlock(&mcu_reset_lock);
+
+	log_debug("count:%d ret:%d, irq_flag:%s,offset:%lld\n", count, ret, irq_flag, *offset);
+	return ret;
+}
+
+static ssize_t mcu_backio1_write(struct file *file,
+								const char __user *buffer, size_t count, loff_t *pos) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[8];
+
+	mutex_lock(&mcu_reset_lock);
+	ret = copy_from_user(irq_flag, buffer, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data from user space!\n");
+		return ret;
+	}
+	log_debug("irq_flag is %s, count is %d, ret is %d.\n", irq_flag, count, ret);
+	mutex_unlock(&mcu_reset_lock);
+
+	return count;
+}
+
+static ssize_t mcu_backio2_read(struct file *file,
+								char __user *buffer, size_t count, loff_t * offset) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[4];
+	int mcu_backio2_gpio_value = 0;
+
+	if( *offset > 0)
+		return 0;
+	mutex_lock(&mcu_reset_lock);
+	mcu_backio2_gpio_value = gpio_get_value(mcu_backio2_gpio);
+	snprintf(irq_flag, sizeof(irq_flag), "%d", mcu_backio2_gpio_value);
+	ret = copy_to_user(buffer, &irq_flag, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data to user space!\n");
+		return ret;
+	}
+	ret = sizeof(irq_flag);
+	*offset += ret;
+	mutex_unlock(&mcu_reset_lock);
+
+	log_debug("count:%d ret:%d, irq_flag:%s,offset:%lld\n", count, ret, irq_flag, *offset);
+	return ret;
+}
+
+static ssize_t mcu_backio2_write(struct file *file,
+								const char __user *buffer, size_t count, loff_t *pos) {
+	ssize_t ret = 0;
+	unsigned char irq_flag[8];
+
+	mutex_lock(&mcu_reset_lock);
+	ret = copy_from_user(irq_flag, buffer, sizeof(irq_flag));
+	if (ret < 0) {
+		log_err("failed to copy data from user space!\n");
+		return ret;
+	}
+	log_debug("irq_flag is %s, count is %d, ret is %d.\n", irq_flag, count, ret);
 	mutex_unlock(&mcu_reset_lock);
 
 	return count;
@@ -138,19 +322,40 @@ static const struct file_operations proc_ops_mcu_irq = {
 	.read = mcu_irq_read,
 	.write = mcu_irq_write,
 };
+static const struct file_operations proc_ops_mcu_uwb_stat = {
+	.owner = THIS_MODULE,
+	.read = mcu_uwb_stat_read,
+	.write = mcu_uwb_stat_write,
+};
+static const struct file_operations proc_ops_mcu_ready = {
+	.owner = THIS_MODULE,
+	.read = mcu_ready_read,
+	.write = mcu_ready_write,
+};
+static const struct file_operations proc_ops_mcu_backio1 = {
+	.owner = THIS_MODULE,
+	.read = mcu_backio1_read,
+	.write = mcu_backio1_write,
+};
+static const struct file_operations proc_ops_mcu_backio2 = {
+	.owner = THIS_MODULE,
+	.read = mcu_backio2_read,
+	.write = mcu_backio2_write,
+};
 
-static irqreturn_t mcu_ready_handler(int irq, void *data) {
-	int ready_gpio_value = 0;
-	long timeout = 2 * HZ;
 
-	ready_gpio_value = gpio_get_value(mcu_ready_gpio);
-	if (ready_gpio_value) {
-		log_debug("mcu_ready irq!!\n");
-	}
-	__pm_wakeup_event(bl_mcu_ready_wakelock, jiffies_to_msecs(timeout));
-	msleep(1000);
-	return IRQ_HANDLED;
-}
+//static irqreturn_t mcu_ready_handler(int irq, void *data) {
+//	int ready_gpio_value = 0;
+//	long timeout = 2 * HZ;
+//
+//	ready_gpio_value = gpio_get_value(mcu_ready_gpio);
+//	if (ready_gpio_value) {
+//		log_debug("mcu_ready irq!!\n");
+//	}
+//	__pm_wakeup_event(bl_mcu_ready_wakelock, jiffies_to_msecs(timeout));
+//	msleep(1000);
+//	return IRQ_HANDLED;
+//}
 
 static int beilu_gpio_init() {
 	int ret = 0;
@@ -196,7 +401,7 @@ static int beilu_gpio_init() {
 		log_err("mcu irq gpio request failed!\n");
 		return ret;
 	}
-	ret = gpio_direction_output(mcu_irq_gpio,0);
+	ret = gpio_direction_output(mcu_irq_gpio,1);
 	if (ret < 0) {
 		log_err("mcu irq gpio set dir failed!\n");
 		return ret;
@@ -216,14 +421,59 @@ static int beilu_gpio_init() {
 		log_err("mcu ready gpio set dir failed!\n");
 		return ret;
 	}
-	mcu_ready_int = gpio_to_irq(mcu_ready_gpio);
-	if(mcu_ready_int < 0) {
-		log_err("mcu ready int get failed!\n");
-		return -EINVAL;
+	//mcu_ready_int = gpio_to_irq(mcu_ready_gpio);
+	//if(mcu_ready_int < 0) {
+	//	log_err("mcu ready int get failed!\n");
+	//	return -EINVAL;
+	//}
+	//ret = request_threaded_irq(mcu_ready_int, NULL, mcu_ready_handler, IRQF_TRIGGER_LOW | IRQF_ONESHOT, "mcu_ready_irq", NULL);
+	//if(ret) {
+	//	log_err("mcu request ready irq failed!\n");
+	//	return ret;
+	//}
+
+	node = of_find_node_with_property(NULL, "beilumcu-uwb-stat-gpio");
+	if(node) {
+		mcu_uwb_stat_gpio = of_get_named_gpio(node, "beilumcu-uwb-stat-gpio", 0);
 	}
-	ret = request_threaded_irq(mcu_ready_int, NULL, mcu_ready_handler, IRQF_TRIGGER_HIGH | IRQF_ONESHOT, "mcu_ready_irq", NULL);
-	if(ret) {
-		log_err("mcu request ready irq failed!\n");
+	ret = gpio_request(mcu_uwb_stat_gpio, "mcu_uwb_stat_gpio");
+	if (ret < 0) {
+		log_err("mcu uwb stat gpio request failed!\n");
+		return ret;
+	}
+	ret = gpio_direction_input(mcu_uwb_stat_gpio);
+	if (ret < 0) {
+		log_err("mcu uwb stat gpio set dir failed!\n");
+		return ret;
+	}
+
+	node = of_find_node_with_property(NULL, "beilumcu-backio1-gpio");
+	if(node) {
+		mcu_backio1_gpio = of_get_named_gpio(node, "beilumcu-backio1-gpio", 0);
+	}
+	ret = gpio_request(mcu_backio1_gpio, "mcu_backio1_gpio");
+	if (ret < 0) {
+		log_err("mcu backio1 gpio request failed!\n");
+		return ret;
+	}
+	ret = gpio_direction_input(mcu_backio1_gpio);
+	if (ret < 0) {
+		log_err("mcu backio1 gpio set dir failed!\n");
+		return ret;
+	}
+
+	node = of_find_node_with_property(NULL, "beilumcu-backio2-gpio");
+	if(node) {
+		mcu_backio2_gpio = of_get_named_gpio(node, "beilumcu-backio2-gpio", 0);
+	}
+	ret = gpio_request(mcu_backio2_gpio, "mcu_backio2_gpio");
+	if (ret < 0) {
+		log_err("mcu backio2 gpio request failed!\n");
+		return ret;
+	}
+	ret = gpio_direction_input(mcu_backio2_gpio);
+	if (ret < 0) {
+		log_err("mcu backio2 gpio set dir failed!\n");
 		return ret;
 	}
 
@@ -233,6 +483,10 @@ static int beilu_gpio_init() {
 static void create_beilu_proc_entry(void) {
 	struct proc_dir_entry *mcu_reset_proc_entry = NULL;
 	struct proc_dir_entry *mcu_irq_proc_entry = NULL;
+	struct proc_dir_entry *mcu_uwb_stat_proc_entry = NULL;
+	struct proc_dir_entry *mcu_ready_proc_entry = NULL;
+	struct proc_dir_entry *mcu_backio1_proc_entry = NULL;
+	struct proc_dir_entry *mcu_backio2_proc_entry = NULL;
 
 	beilu_proc_dir = proc_mkdir(ZTE_BEILU_PROC_DIR, NULL);
 	if(beilu_proc_dir == NULL) {
@@ -250,6 +504,26 @@ static void create_beilu_proc_entry(void) {
 		log_err("Failed to create mcu irq entry\n");
 		return;
 	}
+	mcu_uwb_stat_proc_entry = proc_create(ZTE_BEILU_MCU_UWB_STAT, 0666, beilu_proc_dir, &proc_ops_mcu_uwb_stat);
+	if (mcu_uwb_stat_proc_entry == NULL) {
+		log_err("Failed to create mcu uwb stat entry\n");
+		return;
+	}
+	mcu_ready_proc_entry = proc_create(ZTE_BEILU_MCU_READY, 0666, beilu_proc_dir, &proc_ops_mcu_ready);
+	if (mcu_ready_proc_entry == NULL) {
+		log_err("Failed to create mcu ready entry\n");
+		return;
+	}
+	mcu_backio1_proc_entry = proc_create(ZTE_BEILU_MCU_BACKIO1, 0666, beilu_proc_dir, &proc_ops_mcu_backio1);
+	if (mcu_backio1_proc_entry == NULL) {
+		log_err("Failed to create mcu backio1 entry\n");
+		return;
+	}
+	mcu_backio2_proc_entry = proc_create(ZTE_BEILU_MCU_BACKIO2, 0666, beilu_proc_dir, &proc_ops_mcu_backio2);
+	if (mcu_backio2_proc_entry == NULL) {
+		log_err("Failed to create mcu backio2 entry\n");
+		return;
+	}
 	return;
 }
 
@@ -258,8 +532,8 @@ static int __init beilu_gpio_ctl_init(void) {
 	beilu_gpio_init();
 	create_beilu_proc_entry();
 	mutex_init(&mcu_reset_lock);
-	bl_mcu_ready_wakelock = wakeup_source_create("bl_mcu_ready_wakelock");
-	wakeup_source_add(bl_mcu_ready_wakelock);
+	//bl_mcu_ready_wakelock = wakeup_source_create("bl_mcu_ready_wakelock");
+	//wakeup_source_add(bl_mcu_ready_wakelock);
 	log_debug("%s:done \n", __FUNCTION__);
 	return 0;
 }
@@ -271,7 +545,7 @@ static void __exit beilu_gpio_ctl_exit(void) {
 	}
 	remove_proc_entry(ZTE_BEILU_MCU_RESET, beilu_proc_dir);
 	remove_proc_entry(ZTE_BEILU_PROC_DIR, NULL);
-	wakeup_source_remove(bl_mcu_ready_wakelock);
+	//wakeup_source_remove(bl_mcu_ready_wakelock);
 }
 
 module_init(beilu_gpio_ctl_init);
@@ -280,3 +554,5 @@ module_exit(beilu_gpio_ctl_exit);
 MODULE_AUTHOR("zte light");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("zte bl gpio ctl");
+
+

@@ -5,6 +5,7 @@
 
 #include "zte_charger_bougain.dtsi"
 #include "zte_audio_bougain.dtsi"
+#include "zte_sar_bougain.dtsi"
 #include "zte_camera_bougain.dtsi"
 
 &reserved_memory {

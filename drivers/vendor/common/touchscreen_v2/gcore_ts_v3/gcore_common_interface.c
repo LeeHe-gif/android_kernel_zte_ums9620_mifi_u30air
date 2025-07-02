@@ -599,7 +599,7 @@ static int gcore_bbat_test(struct ztp_device *cdev)
 		ret = wait_for_completion_timeout(&cdev->bbat_test_completion, msecs_to_jiffies(700));
 		if (!ret) {
 			GTP_INFO("tp int test fail");
-			cdev->bbat_test_result = TP_INT_BAAT_TEST_FAIL;
+			cdev->bbat_test_result = TP_INT_BBAT_TEST_FAIL;
 		}
 	}
 	cdev->bbat_test_enter = false;

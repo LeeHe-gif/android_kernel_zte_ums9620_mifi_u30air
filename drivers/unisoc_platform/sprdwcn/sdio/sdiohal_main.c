@@ -56,13 +56,13 @@ static void sdiohal_abort(void)
 	unsigned char val;
 
 	sdio_claim_host(p_data->sdio_func[FUNC_0]);
-	val = sdio_readb(p_data->sdio_func[FUNC_0], 0x0, &err);
+	val = sdio_readb(p_data->sdio_func[FUNC_0], SDIOHAL_CCCR_SDIO_REV, &err);
 	pr_info("before abort, SDIO_VER_CCCR:0x%x\n", val);
 
 	sdio_writeb(p_data->sdio_func[FUNC_0], VAL_ABORT_TRANS,
 		    SDIOHAL_CCCR_ABORT, &err);
 
-	val = sdio_readb(p_data->sdio_func[FUNC_0], 0x0, &err);
+	val = sdio_readb(p_data->sdio_func[FUNC_0], SDIOHAL_CCCR_SDIO_REV, &err);
 	pr_info("after abort, SDIO_VER_CCCR:0x%x\n", val);
 	sdio_release_host(p_data->sdio_func[FUNC_0]);
 }
@@ -450,15 +450,43 @@ static char *sdiohal_haddr[8] = {
 	"hready_status",
 };
 
-void sdiohal_dump_aon_reg(void)
+static int sdiohal_link_is_disconnected(void)
 {
+	u8 val8 = 0;
+	int ret = 0;
+
+	ret = sdiohal_aon_readb(SDIOHAL_CCCR_SDIO_REV, &val8);
+	if (!ret && (val8 != 0xff))
+		return 0;
+
+	pr_info("Abort function 1 data transferring(%u), Recovery link...", val8);
+	ret = sdiohal_aon_writeb(SDIOHAL_CCCR_ABORT, VAL_ABORT_TRANS);
+	if (ret)
+		goto sdio_link_err;
+
+	ret = sdiohal_aon_readb(SDIOHAL_CCCR_SDIO_REV, &val8);
+	if (ret)
+		goto sdio_link_err;
+
+	return 0;
+
+sdio_link_err:
+	pr_info("Recovery link failed %d!", ret);
+
+	return ret;
+}
+
+int sdiohal_dump_aon_reg(void)
+{
+	int k;
 	unsigned char reg_buf[16];
 	unsigned char i, j, val = 0;
-
-	int k;
 	unsigned char aon_tb[256];
 	unsigned char btwf_db[256];
 	struct wcn_match_data *g_match_config = get_wcn_match_config();
+
+	if (sdiohal_link_is_disconnected())
+		return -EIO;
 
 	pr_info("sdio dump_aon_reg entry\n");
 	for (i = 0; i <= CP_128BIT_SIZE; i++) {
@@ -529,6 +557,8 @@ void sdiohal_dump_aon_reg(void)
 	}
 
 	pr_info("sdio dump_aon_reg end\n\n");
+
+	return 0;
 }
 EXPORT_SYMBOL_GPL(sdiohal_dump_aon_reg);
 
@@ -1047,6 +1077,7 @@ fail_to_suspend:
 	}
 	atomic_set(&p_data->flag_suspending, 1);
 	atomic_set(&p_data->flag_resume, 1);
+	wake_up_all(&p_data->resume_waitq);
 
 power_notify:
 	for (chn = chn - 1; chn >= 0; chn--) {
@@ -1251,6 +1282,9 @@ static void sdiohal_remove(struct sdio_func *func)
 
 	if (p_data->irq_num != 0)
 		free_irq(p_data->irq_num, &func->dev);
+
+	if (func->num == 1)
+		kfree(p_data->sdio_func[FUNC_0]);
 
 	pr_info("%s remove card successful\n", __func__);
 }

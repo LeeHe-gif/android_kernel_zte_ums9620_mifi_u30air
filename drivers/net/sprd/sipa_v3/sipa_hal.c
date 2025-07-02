@@ -204,7 +204,7 @@ static void sipa_backup_open_fifo_params(struct device *dev,
 
 	if (attr) {
 		if (!fifo_param->attr) {
-			fifo_param->attr = kzalloc(sizeof(*attr), GFP_KERNEL);
+			fifo_param->attr = kzalloc(sizeof(*attr), GFP_ATOMIC);
 			if (!fifo_param->attr)
 				return;
 		}
@@ -214,7 +214,7 @@ static void sipa_backup_open_fifo_params(struct device *dev,
 	if (ext_attr) {
 		if (!fifo_param->ext_attr) {
 			fifo_param->ext_attr = kzalloc(sizeof(*ext_attr),
-						       GFP_KERNEL);
+						       GFP_ATOMIC);
 			if (!fifo_param->ext_attr)
 				return;
 		}
@@ -625,6 +625,16 @@ int sipa_hal_reclaim_unuse_node(struct device *dev,
 	struct sipa_plat_drv_cfg *ipa = dev_get_drvdata(dev);
 
 	return ipa->fifo_ops.reclaim_cmn_fifo(fifo_id, ipa->cmn_fifo_cfg);
+}
+
+int sipa_hal_reclaim_unuse_intr(struct device *dev,
+				enum sipa_cmn_fifo_index fifo_id)
+{
+	struct sipa_plat_drv_cfg *ipa = dev_get_drvdata(dev);
+
+	return ipa->fifo_ops.traverse_int_bit(fifo_id,
+					      ipa->cmn_fifo_cfg,
+					      0);
 }
 
 int sipa_hal_put_node_to_rx_fifo(struct device *dev,

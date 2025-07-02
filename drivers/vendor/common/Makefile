@@ -39,3 +39,8 @@ obj-y += stats_info/
 ifdef ZTE_FEATURE_PV_AR
 obj-$(CONFIG_ZTE_PV_PIN_TEST)   += zte_pv_pintest/
 endif
+
+obj-$(CONFIG_ZTE_DDR_INFO)	+= zte_ddr_info/
+
+#DCMTALK
+obj-$(CONFIG_DCMTALK_SUPPORT)   += dcmtalk/

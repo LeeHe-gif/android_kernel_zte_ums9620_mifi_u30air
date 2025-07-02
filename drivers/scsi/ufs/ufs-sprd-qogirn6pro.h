@@ -114,7 +114,7 @@ struct ufs_sprd_host {
 #define CBCREGRDWRSEL				0x811C
 #define CBCRCTRL				0x811F
 #define CBREFCLKCTRL2				0x8132
-
+#define CBUPLH8					0x8130
 /*
  *Synopsys RX implementation specific M-PHY Attributes
  */
@@ -126,5 +126,17 @@ struct ufs_sprd_host {
 
 /* Define debug bus register */
 #define REG_DEBUG_BUS_SYSSEL	0x7800A100
+
+/*
+ * This capability allows the host controller enter
+ * ULP state in Hibernate8, if it is set
+ */
+#define UFSHCD_CAP_H8_ULP (1 << 31)
+
+/* compensation time for TActivate in Hibernate ULP state */
+#define ULP_TACTIVATE_COMP_TIME 200
+
+/* Enable ULP H8 */
+#define ULP_H8_EN 0x1
 
 #endif/* _UFS_SPRD_H_ */

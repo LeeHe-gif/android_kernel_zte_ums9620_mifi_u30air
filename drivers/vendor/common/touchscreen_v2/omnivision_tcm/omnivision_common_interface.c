@@ -892,7 +892,7 @@ static int ovt_tcm_bbat_test(struct ztp_device *cdev)
 		if (!zeroflash_hcd->fw_ready) {
 			ret = wait_for_completion_timeout(&cdev->bbat_test_completion, msecs_to_jiffies(700));
 			if (!ret) {
-				cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL | TP_INT_BAAT_TEST_FAIL;
+				cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL | TP_INT_BBAT_TEST_FAIL;
 				ovt_info(ERR_LOG, "bbat_test_completion timeout, ovt_tcm_bbat_test failed\n");
 			} else {
 				ovt_info(INFO_LOG, "ovt_tcm_bbat_test success\n");
@@ -901,7 +901,7 @@ static int ovt_tcm_bbat_test(struct ztp_device *cdev)
 			ovt_info(INFO_LOG, "ovt_tcm_bbat_test success\n");
 		}
 	} else {
-		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BAAT_TEST_FAIL | TP_INT_BAAT_TEST_FAIL;
+		cdev->bbat_test_result = cdev->bbat_test_result | TP_RST_BBAT_TEST_FAIL | TP_INT_BBAT_TEST_FAIL;
 		ovt_info(ERR_LOG, "ovt_tcm rst_gpio is not valid, ovt_tcm_bbat_test failed\n");
 	}
 

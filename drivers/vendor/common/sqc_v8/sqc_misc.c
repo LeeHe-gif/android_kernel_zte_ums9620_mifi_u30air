@@ -50,6 +50,7 @@
 #define SQC_THERMAL_SETTING_VOTER		"THERMAL_SETTING_VOTER"
 #define SQC_ZTE_THERMAL_VOTER		    "ZTE_THERMAL_VOTER"
 #define SQC_MTK_FLASH_VOTER		    	"SQC_MTK_FLASH_VOTER"
+#define SQC_KERNEL_DRIVER_VOTER			"SQC_KERNEL_DRIVER_VOTER"
 
 enum {
 	ZTE_VOTER_LIGHT_CHG = 0,
@@ -331,6 +332,10 @@ int sqc_get_property(enum power_supply_property psp,
 		case POWER_SUPPLY_PROP_TEMP:
 			retval = misc_hal_data.tbat_debug;
 			break;
+		case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
+			retval = get_client_vote(misc_hal_data.usb_icl_votable, SQC_KERNEL_DRIVER_VOTER);
+			retval = (retval < 0) ? -1 : retval;
+		break;
 		default:
 			pr_debug("psp type: UNKNOWN\n");
 			retval = -EINVAL;
@@ -412,6 +417,12 @@ int sqc_set_property(enum power_supply_property psp,
 				vote(misc_hal_data.fcc_votable, SQC_MTK_FLASH_VOTER, true, val->intval);
 			else
 				vote(misc_hal_data.fcc_votable, SQC_MTK_FLASH_VOTER, false, 0);
+			break;
+		case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
+			if (val->intval >= 0)
+				vote(misc_hal_data.usb_icl_votable, SQC_KERNEL_DRIVER_VOTER, true, val->intval);
+			else
+				vote(misc_hal_data.usb_icl_votable, SQC_KERNEL_DRIVER_VOTER, false, 0);
 			break;
 		default:
 			pr_debug("psp type: UNKNOWN\n");
@@ -1041,6 +1052,10 @@ static int interface_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
 		pval->intval = 0;
 		break;
+	case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
+		pval->intval = get_client_vote(pdata->usb_icl_votable, SQC_KERNEL_DRIVER_VOTER);
+		pval->intval = (pval->intval < 0) ? -1 : pval->intval;
+		break;
 	default:
 		pr_info("interface unsupported property %d\n", psp);
 		rc = -EINVAL;
@@ -1107,6 +1122,12 @@ static int interface_psy_set_property(struct power_supply *psy,
 			vote(pdata->fcc_votable, ZTE_VOTER_NAMES[voter_index], voter_enable, 0);
 		}
 		break;
+	case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
+		if (pval->intval >= 0)
+			vote(pdata->usb_icl_votable, SQC_KERNEL_DRIVER_VOTER, true, pval->intval);
+		else
+			vote(pdata->usb_icl_votable, SQC_KERNEL_DRIVER_VOTER, false, 0);
+		break;
 	default:
 		pr_info("interface unsupported property %d\n", psp);
 		rc = -EINVAL;
@@ -1128,6 +1149,7 @@ static int interface_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
 	case POWER_SUPPLY_PROP_TEMP:
 	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
+	case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
 		return 1;
 	default:
 		break;
@@ -1314,6 +1336,7 @@ static enum power_supply_property interface_psy_props[] = {
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
+	POWER_SUPPLY_PROP_INPUT_POWER_LIMIT,
 };
 
 static const struct power_supply_desc interface_psy_desc = {
