@@ -79,7 +79,7 @@ config TOUCHSCREEN_PSENSOR_REPORT_CHECK
 	help
 	  Say Y here if you use tp promixity mode.If unsure, say N.
 config TOUCHSCREEN_TEMP_CTRL_ZONE_NOTIFY
- 	bool " temperature control zone down/up notify"
+bool "temperature control zone down/up notify"
  	default n
 	depends on TOUCHSCREEN_VENDOR_V3
  	help
